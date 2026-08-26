@@ -1,4 +1,5 @@
 const mongoose=require('mongoose');
+
 const issueSchema=new mongoose.Schema({
     description:{
         type:String,
@@ -19,10 +20,12 @@ const issueSchema=new mongoose.Schema({
                 "other"
         ]
     },
+
     image:{
         type:String,
         required:true
     },
+
     location:{
         latitude:{
             type:Number,
@@ -33,33 +36,38 @@ const issueSchema=new mongoose.Schema({
             required:true
         }
     },
-     priority: {
+
+    priority: {
         type: String,
         enum: ["low", "medium", "high", "critical"],
         default: "medium"
     },
+
     status:{
         type:String,
         default:"reported",
         enum:["reported","in_progress","resolved","rejected","citizen_verified"]
     },
+
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-        required: false     
+        required: false
     },
 
-    departmentId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Department",
-        default: null
+    department: {
+        type: String,
+
+        enum: [
+        "Public Works",
+        "Municipal",    
+        "Electrical",
+        "Other"],
+
+        required: true
     },
 
-    officerId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Officer",
-        default: null
-    },
+
      resolvedAt: {
         type: Date,
         default: null

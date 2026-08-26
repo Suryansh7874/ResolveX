@@ -4,7 +4,6 @@ const cors=require('cors');
 const dotenv=require('dotenv');
 const connectDB =require("./src/config/db");
 const issueRoutes = require("./src/routes/issueRoutes");
-// const uploadRoutes = require("./src/routes/uploadroutes");
 const mongoose = require("mongoose");
 // const Issue = require("./src/models/Issue");
 
@@ -19,7 +18,6 @@ app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 app.use("/api/issues", issueRoutes);
-// app.use("/api", uploadRoutes);
 
 app.get('/',(req,res)=>{
     res.json({message:'Civic Issue Tracker Backend is running'});  //Printing on browser when the server is running
