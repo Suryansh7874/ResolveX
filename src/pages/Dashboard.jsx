@@ -1,4 +1,6 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { getCurrentUser } from "../services/authService";
 import {
   Bell,
   ChevronRight,
@@ -13,6 +15,58 @@ import {
 } from "lucide-react";
 
 function Dashboard() {
+
+const navigate = useNavigate();
+
+const [user, setUser] = useState(null);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  const verifyUser = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/auth/me",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+
+      setUser(data.user);
+
+    } catch (error) {
+      console.error("Authentication failed:", error);
+
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      navigate("/login");
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  verifyUser();
+}, [navigate]);
+if (loading) {
+  return <div>Loading...</div>;
+}
+
   const issues = [
     {
       id: "RX-1024",
@@ -104,8 +158,8 @@ function Dashboard() {
             </div>
 
             <div>
-              <strong>Citizen</strong>
-              <span>Citizen Account</span>
+             <strong>{user?.name}</strong>
+             <span>{user?.role} Account</span>
             </div>
           </div>
 
@@ -128,7 +182,7 @@ function Dashboard() {
             </p>
 
             <h1>
-              Welcome back, Citizen! 👋
+              Welcome back, {user?.name}! 👋
             </h1>
 
             <p className="welcome-description">

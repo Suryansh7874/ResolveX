@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import {
   User,
   Mail,
-  Phone,
   Lock,
 } from "lucide-react";
 
@@ -13,9 +12,8 @@ function Register() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
     password: "",
-    confirmPassword: "",
+    // confirmPassword: "",
   });
 
   const [message, setMessage] = useState("");
@@ -34,31 +32,36 @@ function Register() {
     setMessage("");
     setError("");
 
+    // Check password
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       return;
     }
 
     try {
+      // Send data to backend
       const data = await registerUser({
         name: formData.name,
         email: formData.email,
-        phone: formData.phone,
         password: formData.password,
+        role: "CITIZEN",
       });
 
       setMessage(
         data.message || "Registration successful"
       );
 
+      // Clear form after successful registration
       setFormData({
         name: "",
         email: "",
-        phone: "",
         password: "",
         confirmPassword: "",
       });
+
     } catch (err) {
+      console.log("Registration error:", err);
+
       setError(
         err.response?.data?.message ||
           "Registration failed"
@@ -68,25 +71,32 @@ function Register() {
 
   return (
     <main className="auth-page">
+
       <section className="register-card">
 
+        {/* Icon */}
         <div className="auth-icon">
           <User size={22} />
         </div>
 
+        {/* Heading */}
         <h1>Create Account</h1>
 
         <p className="auth-subtitle">
-          Join ResolveX to report and track issues in your city.
+          Join ResolveX to report and track issues
+          in your city.
         </p>
 
         <form onSubmit={handleSubmit}>
 
-          {/* Name */}
+          {/* ================= NAME ================= */}
+
           <div className="form-group">
+
             <label>Full Name</label>
 
             <div className="input-wrapper">
+
               <User size={18} />
 
               <input
@@ -97,80 +107,85 @@ function Register() {
                 onChange={handleChange}
                 required
               />
+
             </div>
+
           </div>
 
-          {/* Email */}
+
+          {/* ================= EMAIL ================= */}
+
           <div className="form-group">
+
             <label>Email Address</label>
 
             <div className="input-wrapper">
+
               <Mail size={18} />
 
               <input
                 type="email"
                 name="email"
-                placeholder="Enter your Email Address"
+                placeholder="Enter your email address"
                 value={formData.email}
                 onChange={handleChange}
                 required
               />
+
             </div>
+
           </div>
 
-          {/* Phone */}
+
+          {/* ================= PASSWORD ================= */}
+
           <div className="form-group">
-            <label>Phone Number</label>
 
-            <div className="input-wrapper">
-              <Phone size={18} />
-
-              <input
-                type="tel"
-                name="phone"
-                placeholder="Enter your Phone number"
-                value={formData.phone}
-                onChange={handleChange}
-                required
-              />
-            </div>
-          </div>
-
-          {/* Password */}
-          <div className="form-group">
             <label>Password</label>
 
             <div className="input-wrapper">
+
               <Lock size={18} />
 
               <input
                 type="password"
                 name="password"
-                placeholder="Enter your Password"
+                placeholder="Enter your password"
                 value={formData.password}
                 onChange={handleChange}
                 required
               />
+
             </div>
+
           </div>
 
-          {/* Confirm Password */}
+
+          {/* ================= CONFIRM PASSWORD ================= */}
+
           <div className="form-group">
+
             <label>Confirm Password</label>
 
             <div className="input-wrapper">
+
               <Lock size={18} />
 
               <input
                 type="password"
                 name="confirmPassword"
-                placeholder="Confirm your Password"
+                placeholder="Confirm your password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
               />
+
             </div>
+
           </div>
+
+
+          {/* ================= ERROR ================= */}
 
           {error && (
             <p className="form-error">
@@ -178,11 +193,17 @@ function Register() {
             </p>
           )}
 
+
+          {/* ================= SUCCESS ================= */}
+
           {message && (
             <p className="form-success">
               {message}
             </p>
           )}
+
+
+          {/* ================= SUBMIT ================= */}
 
           <button
             type="submit"
@@ -193,16 +214,28 @@ function Register() {
 
         </form>
 
+
+        {/* ================= DIVIDER ================= */}
+
         <div className="or-divider">
           <span>or</span>
         </div>
 
+
+        {/* ================= LOGIN ================= */}
+
         <p className="auth-footer">
+
           Already have an account?{" "}
-          <Link to="/login">Login</Link>
+
+          <Link to="/login">
+            Login
+          </Link>
+
         </p>
 
       </section>
+
     </main>
   );
 }

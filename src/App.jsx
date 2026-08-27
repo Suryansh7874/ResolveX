@@ -10,6 +10,8 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminIssues from "./pages/AdminIssues";
 
 function App() {
   return (
@@ -40,7 +42,23 @@ function App() {
             element={<Dashboard />}
           />
         </Route>
+        <Route
+  path="/admin"
+  element={
+    <ProtectedRoute>
+      <AdminDashboard />
+    </ProtectedRoute>
+  }
+/>
 
+<Route
+  path="/admin/issues"
+  element={
+    <ProtectedRoute>
+      <AdminIssues />
+    </ProtectedRoute>
+  }
+/>
       </Routes>
 
     </BrowserRouter>
