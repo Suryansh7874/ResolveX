@@ -11,15 +11,15 @@ const createIssue = async (req, res) => {
             userId,
         } = req.body;
 
-        // Validate required fields
+// Validate required fields ->description & category
         if (!description || !category) {
             return res.status(400).json({
                 message: "Description and category are required"
             });
         }
 
-        //Evaluate department based on category
-        let departmentName;
+//Evaluate department based on category
+        let department;
         if (
             category === "pothole" ||
             category === "damaged_road"
@@ -43,26 +43,45 @@ const createIssue = async (req, res) => {
             department = "Other";
         }
 
-        
 
-//Checking latitude and longitude values
+//Validating latitude and longitude values
         if (latitude === undefined || longitude === undefined) {
             return res.status(400).json({
             message: "Location is required"
         });
 }
-//Checking image file
-        if (!req.file) {
-            return res.status(400).json({
-                message: "Issue image is required"
-            });
-        }
 
+//Validating image file
+        if (!req.files || !req.files.image) {
+                return res.status(400).json({
+                    message: "Issue image is required"
+                });
+            }
+
+            const media = [];
+
+// Add image
+            if (req.files.image) {
+                media.push({
+                    type: "image",
+                    url: `/uploads/${req.files.image[0].filename}`
+                });
+            }
+
+// Add video if provided
+            if (req.files.video) {
+                media.push({
+                    type: "video",
+                    url: `/uploads/${req.files.video[0].filename}`
+                });
+            }
+
+//Creating the issue
         const issue = await Issue.create({
             description,
             category,
             
-            image: `/uploads/${req.file.filename}`,
+            media,
 
             location: {
                 latitude: Number(latitude),
@@ -84,10 +103,11 @@ const createIssue = async (req, res) => {
         console.error(error);
 
         res.status(500).json({
-            message: "Server error"
+            message: "Server error!! Issue not created"
         });
     }
 };
+
 const getDepartmentIssues = async (req, res) => {
     try {
 
@@ -113,41 +133,48 @@ const getDepartmentIssues = async (req, res) => {
     } catch (error) {
 
         res.status(500).json({
-            message: "Failed to fetch issues",
+            message: `Failed to fetch issues of ${department} department`,
             error: error.message
         });
-
     }
 };
-const updateIssue = async (req, res) => {
+
+const updateIssue = async (req,res) => {
 
     try {
-
-        const { id } = req.params;
-
-        const { status, priority } = req.body;
-
+        const {id} = req.params;
+        const {status, priority} = req.body;
         const issue = await Issue.findById(id);
+        const Notification = require("../models/Notification");
 
         if (!issue) {
             return res.status(404).json({
-                message: "Issue not found"
+                message: "Issue not found Please try again!!"
             });
         }
 
         if (status !== undefined) {
-            issue.status = status;
+            issue.status = status;  //Updating the issue status
+
+            await Notification.create({
+                userId: issue.userId,
+                issueId: issue._id,
+                message: `Your issue status has been updated to ${status}`,
+                type: status === "resolved"
+                    ? "issue_resolved"
+                    : "status_updated"
+            });
+
         }
 
-        if (priority !== undefined) {
-            issue.priority = priority;
+        if(priority !== undefined) {
+            issue.priority = priority;   //Updating priority
         }
 
-        if (status === "resolved") {
-            issue.resolvedAt = new Date();
+        if(status==="resolved") {
+            issue.resolvedAt= new Date();  //Recording the date&time when issue is resolved
         }
-
-        await issue.save();
+        await issue.save();        
 
         res.status(200).json({
             message: "Issue updated successfully",
@@ -159,17 +186,16 @@ const updateIssue = async (req, res) => {
         console.error(error);
 
         res.status(500).json({
-            message: "Failed to update issue",
+            message: "Failed to update issue , Please try Again!!",
             error: error.message
         });
-
     }
 };
+
+
 const getMyIssues = async (req, res) => {
     try {
-
         const { userId } = req.query;
-
         const issues = await Issue.find({
             userId: userId
         });
@@ -182,12 +208,12 @@ const getMyIssues = async (req, res) => {
     } catch (error) {
 
         res.status(500).json({
-            message: "Failed to fetch your issues",
+            message: "Failed to fetch your issues, Please try Again!1",
             error: error.message
         });
-
     }
 };
+
 const getIssueById = async (req, res) => {
     try {
 
@@ -195,7 +221,7 @@ const getIssueById = async (req, res) => {
 
         if (!issue) {
             return res.status(404).json({
-                message: "Issue not found"
+                message: "Issue not found, Please try Again!!"
             });
         }
 
@@ -206,19 +232,18 @@ const getIssueById = async (req, res) => {
     } catch (error) {
 
         res.status(500).json({
-            message: "Failed to fetch issue",
+            message: "Failed to fetch issue, Please try Again",
             error: error.message
         });
 
     }
 };
+
+
 const updateMyIssue = async (req, res) => {
-
     try {
-
         const { id } = req.params;
         const { userId, description, category } = req.body;
-
         const issue = await Issue.findOne({
             _id: id,
             userId: userId
@@ -229,38 +254,36 @@ const updateMyIssue = async (req, res) => {
                 message: "Issue not found or you are not authorized"
             });
         }
-
-        if (description !== undefined) {
+        if(description !== undefined) {
             issue.description = description;
         }
 
-        if (category !== undefined) {
+        if(category !== undefined) {
             issue.category = category;
         }
-
         await issue.save();
 
         res.status(200).json({
-            message: "Issue updated successfully",
+            message: "Hurray!! Issue updated successfully",
             issue
         });
 
     } catch (error) {
 
         res.status(500).json({
-            message: "Failed to update issue",
+            message: "Failed to update issue, Please try Again!!",
             error: error.message
         });
 
     }
 };
+
+
 const deleteMyIssue = async (req, res) => {
 
     try {
-
         const { id } = req.params;
         const { userId } = req.body;
-
         const issue = await Issue.findOneAndDelete({
             _id: id,
             userId: userId
@@ -273,7 +296,7 @@ const deleteMyIssue = async (req, res) => {
         }
 
         res.status(200).json({
-            message: "Issue deleted successfully"
+            message: "Hurray!! Issue deleted successfully"
         });
 
     } catch (error) {
@@ -282,9 +305,10 @@ const deleteMyIssue = async (req, res) => {
             message: "Failed to delete issue",
             error: error.message
         });
-
     }
 };
+
+
 module.exports = {
     createIssue,
     getDepartmentIssues,

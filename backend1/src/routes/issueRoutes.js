@@ -1,8 +1,6 @@
 const express = require("express");
-
-const router = express.Router();
-
-const upload = require("../middleware/upload");
+const router = express.Router(); //making route
+const upload = require("../middleware/upload"); //to store the image received
 
 const {
     createIssue,
@@ -15,19 +13,23 @@ const {
 } = require("../controllers/issueController");
 
 router.post("/",
-    upload.single("image"),
+   upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "video", maxCount: 1 }
+    ]), 
     createIssue
 );
 
-router.get("/", getDepartmentIssues);
+router.get("/", getDepartmentIssues);     //filtering issues by department
 
-router.patch("/:id", updateIssue);
+router.patch("/:id", updateIssue);  //updating the issue status & priority by the officer
 
-router.get("/my", getMyIssues);
+router.get("/my", getMyIssues);   //user seeing his own issues
 
-router.get("/:id", getIssueById);
+router.get("/:id",getIssueById);  //Retrieving the issue by id
 
-router.patch("/my/:id", updateMyIssue);
+router.patch("/my/:id", updateMyIssue);  //user updating his own issue
 
-router.delete("/my/:id", deleteMyIssue);
+router.delete("/my/:id", deleteMyIssue); //user deleting his issue
+
 module.exports = router;

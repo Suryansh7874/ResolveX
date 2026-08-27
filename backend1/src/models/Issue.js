@@ -21,10 +21,19 @@ const issueSchema=new mongoose.Schema({
         ]
     },
 
-    image:{
-        type:String,
-        required:true
-    },
+  media: [
+    {
+        type: {
+            type: String,
+            enum: ["image", "video"],
+            required: true
+        },
+        url: {
+            type: String,
+            required: true
+        }
+    }
+],
 
     location:{
         latitude:{
@@ -72,12 +81,6 @@ const issueSchema=new mongoose.Schema({
         type: Date,
         default: null
     }
-
-//implemented in officer controller when the officer resolves the issue{
-// issue.status = "resolved";
-// issue.resolvedAt = new Date();
-// await issue.save();
-// }
 
 },
 {

@@ -18,18 +18,20 @@ const storage=multer.diskStorage({
 const upload=multer({
     storage:storage ,
     limits:{
-        fileSize:5*1024*1024
-    },
+        fileSize:50*1024*1024
+    },   
     fileFilter:(req,file,cb)=>{
         const allowedTypes=[
             "image/jpeg",
             "image/jpg",
-            "image/png"
+            "image/png",
+            "video/mp4",
+            "video/webm"
         ];
         if(allowedTypes.includes(file.mimetype)){
             cb(null,true);
         }else {
-            cb(new Error("Only image files are allowed"));
+            cb(new Error("Only image and video files are allowed, Please try Again!!"));
         }
     }
 });
