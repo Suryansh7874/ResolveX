@@ -9,6 +9,8 @@ const userRoutes = require("./routes/userRoutes");
 
 const aiRoutes = require("./routes/aiRoutes");
 
+const voiceRoute = require("./routes/voiceRoute");
+
 const app = express();
 
 app.use(helmet());
@@ -21,6 +23,7 @@ app.use("/api/issues", issueRoutes);
 app.use("/api/ai", aiRoutes);
 
 app.use("/api/users", userRoutes);
+app.use("/api/voice", voiceRoute);
 
 
 app.get("/api/health", (req, res) => {
