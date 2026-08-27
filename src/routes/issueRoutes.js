@@ -28,7 +28,7 @@ router.post("/:issueId/upvote", authMiddleware, upvoteIssue);
 router.post(
     "/:issueId/status",
     authMiddleware,
-    roleMiddleware("ADMIN"),  // only admin can change status
+    roleMiddleware("ADMIN", "OFFICER"),  // only admin and assigned officer can change status
     updateIssueStatus
 );
 
@@ -38,6 +38,7 @@ router.post(
     roleMiddleware("ADMIN"),  // only admin can assign to officer
     assignIssue
 );
+
 
 
 

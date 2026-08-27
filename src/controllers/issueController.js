@@ -190,6 +190,30 @@ const updateIssueStatus = async(req,res) => {
             });
         }
 
+        if(req.user.role !== "ADMIN"){
+            if(req.user.role !== "OFFICER"){
+                return res.status(403).json({
+                    success:false,
+                    message:"Only admin and officer can update the issue",
+
+                });
+            }
+
+            if(!issue.assignedTo){
+                return res.status(403).json({
+                    success:false,
+                    message:"You are not assigned for this issue",
+                });
+            }
+
+            if(!(issue.assignedTo.equals(req.user.userId))){
+                return res.status(403).json({
+                    success:false,
+                    message:"You are not assigned to this issue",
+                });
+            }
+        }
+
         const allowedStatuses = [
             "REPORTED",
             "VERIFIED",
