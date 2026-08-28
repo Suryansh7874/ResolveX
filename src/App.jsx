@@ -12,6 +12,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminIssues from "./pages/AdminIssues";
+import OfficerDashboard from "./pages/OfficerDashboard";
 
 function App() {
   return (
@@ -56,6 +57,14 @@ function App() {
   element={
     <ProtectedRoute>
       <AdminIssues />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/officer"
+  element={
+    <ProtectedRoute>
+      <OfficerDashboard />
     </ProtectedRoute>
   }
 />
