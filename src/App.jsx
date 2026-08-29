@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter,
   Routes,
@@ -13,18 +14,19 @@ import Navbar from "./components/Navbar";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminIssues from "./pages/AdminIssues";
 import OfficerDashboard from "./pages/OfficerDashboard";
+import ReportIssue from "./pages/ReportIssue";
 
 function App() {
   return (
     <BrowserRouter>
-
       <Navbar />
 
       <Routes>
 
+        {/* Public Routes */}
         <Route
           path="/"
-          element={<Navigate to="/register" />}
+          element={<Navigate to="/register" replace />}
         />
 
         <Route
@@ -37,41 +39,54 @@ function App() {
           element={<Login />}
         />
 
+        {/* Citizen Protected Routes */}
         <Route element={<ProtectedRoute />}>
+
           <Route
             path="/dashboard"
             element={<Dashboard />}
           />
+
+          <Route
+            path="/report"
+            element={<ReportIssue />}
+          />
+
         </Route>
+
+        {/* Admin Routes */}
         <Route
-  path="/admin"
-  element={
-    <ProtectedRoute>
-      <AdminDashboard />
-    </ProtectedRoute>
-  }
-/>
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-<Route
-  path="/admin/issues"
-  element={
-    <ProtectedRoute>
-      <AdminIssues />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/officer"
-  element={
-    <ProtectedRoute>
-      <OfficerDashboard />
-    </ProtectedRoute>
-  }
-/>
+        <Route
+          path="/admin/issues"
+          element={
+            <ProtectedRoute>
+              <AdminIssues />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Officer Routes */}
+        <Route
+          path="/officer"
+          element={
+            <ProtectedRoute>
+              <OfficerDashboard />
+            </ProtectedRoute>
+          }
+        />
+
       </Routes>
-
     </BrowserRouter>
   );
 }
 
 export default App;
+
