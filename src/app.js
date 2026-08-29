@@ -11,6 +11,11 @@ const aiRoutes = require("./routes/aiRoutes");
 
 const voiceRoute = require("./routes/voiceRoute");
 
+const officerRoute = require("./routes/officerRoutes");
+const { getOfficerIssueDetails } = require("./controllers/officerIssueController");
+
+
+
 const app = express();
 
 app.use(helmet());
@@ -24,6 +29,9 @@ app.use("/api/ai", aiRoutes);
 
 app.use("/api/users", userRoutes);
 app.use("/api/voice", voiceRoute);
+app.use("/api/officer",officerRoute);
+
+app.use("/api/officer",getOfficerIssueDetails);
 
 
 app.get("/api/health", (req, res) => {
