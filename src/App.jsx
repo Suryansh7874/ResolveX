@@ -1,92 +1,94 @@
-
 import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
+BrowserRouter,
+Routes,
+Route,
+Navigate,
 } from "react-router-dom";
 
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
+
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminIssues from "./pages/AdminIssues";
 import OfficerDashboard from "./pages/OfficerDashboard";
+import Officers from "./pages/Officers";
 import ReportIssue from "./pages/ReportIssue";
 
 function App() {
-  return (
-    <BrowserRouter>
-      <Navbar />
+return ( <BrowserRouter> <Navbar />
 
-      <Routes>
+```
+  <Routes>
 
-        {/* Public Routes */}
-        <Route
-          path="/"
-          element={<Navigate to="/register" replace />}
-        />
+    {/* Public Routes */}
+    <Route
+      path="/"
+      element={<Navigate to="/register" replace />}
+    />
 
-        <Route
-          path="/register"
-          element={<Register />}
-        />
+    {/* Authentication */}
+    <Route
+      path="/register"
+      element={<Register />}
+    />
 
-        <Route
-          path="/login"
-          element={<Login />}
-        />
+    <Route
+      path="/login"
+      element={<Login />}
+    />
 
-        {/* Citizen Protected Routes */}
-        <Route element={<ProtectedRoute />}>
+    {/* Protected Routes */}
+    <Route element={<ProtectedRoute />}>
 
-          <Route
-            path="/dashboard"
-            element={<Dashboard />}
-          />
+      {/* Citizen Routes */}
+      <Route
+        path="/dashboard"
+        element={<Dashboard />}
+      />
 
-          <Route
-            path="/report"
-            element={<ReportIssue />}
-          />
+      <Route
+        path="/report"
+        element={<ReportIssue />}
+      />
 
-        </Route>
+      <Route
+        path="/report-issue"
+        element={<ReportIssue />}
+      />
 
-        {/* Admin Routes */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+      {/* Admin Routes */}
+      <Route
+        path="/admin"
+        element={<AdminDashboard />}
+      />
 
-        <Route
-          path="/admin/issues"
-          element={
-            <ProtectedRoute>
-              <AdminIssues />
-            </ProtectedRoute>
-          }
-        />
+      <Route
+        path="/admin/issues"
+        element={<AdminIssues />}
+      />
 
-        {/* Officer Routes */}
-        <Route
-          path="/officer"
-          element={
-            <ProtectedRoute>
-              <OfficerDashboard />
-            </ProtectedRoute>
-          }
-        />
+      <Route
+        path="/admin/officers"
+        element={<Officers />}
+      />
 
-      </Routes>
-    </BrowserRouter>
-  );
+      {/* Officer Routes */}
+      <Route
+        path="/officer"
+        element={<OfficerDashboard />}
+      />
+
+    </Route>
+
+  </Routes>
+</BrowserRouter>
+
+
+);
 }
 
 export default App;
-
