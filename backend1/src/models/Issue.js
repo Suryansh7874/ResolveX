@@ -1,0 +1,90 @@
+const mongoose=require('mongoose');
+
+const issueSchema=new mongoose.Schema({
+    description:{
+        type:String,
+        required:true,
+        trim:true
+    },
+    category:{
+        type:String,
+        required:true,
+        enum:[
+                "pothole",
+                "garbage",
+                "streetlight",
+                "traffic_signal",
+                "damaged_road",
+                "fallen_tree",
+                "electrical_hazard",
+                "other"
+        ]
+    },
+
+  media: [
+    {
+        type: {
+            type: String,
+            enum: ["image", "video"],
+            required: true
+        },
+        url: {
+            type: String,
+            required: true
+        }
+    }
+],
+
+    location:{
+        latitude:{
+            type:Number,
+            required:true
+        },
+        longitude:{
+            type:Number,
+            required:true
+        }
+    },
+
+    priority: {
+        type: String,
+        enum: ["low", "medium", "high", "critical"],
+        default: "medium"
+    },
+
+    status:{
+        type:String,
+        default:"reported",
+        enum:["reported","in_progress","resolved","rejected","citizen_verified"]
+    },
+
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: false
+    },
+
+    department: {
+        type: String,
+
+        enum: [
+        "Public Works",
+        "Municipal",    
+        "Electrical",
+        "Other"],
+
+        required: true
+    },
+
+
+     resolvedAt: {
+        type: Date,
+        default: null
+    }
+
+},
+{
+    timestamps:true
+}  
+);
+module.exports=mongoose.model('Issue',issueSchema);
