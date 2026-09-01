@@ -23,6 +23,7 @@ app.use("/api/ai", aiRoutes);
 
 app.use("/api/users", userRoutes);
 app.use("/api/voice", voiceRoute);
+app.use("/uploads", express.static("uploads"));
 
 
 app.get("/api/health", (req, res) => {

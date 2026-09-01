@@ -1,6 +1,9 @@
 const {
   registerUser,
   loginUser,
+  forgotPassword,
+  verifyResetOTP,
+  resetPassword,
 } = require("../services/authService");
 
 const register = async (req, res) => {
@@ -111,9 +114,167 @@ const adminTest = async (req, res) => {
   });
 };
 
+
+// FORGOT PASSWORD
+
+const forgotPasswordController = async (req, res) => {
+
+  try {
+
+    const { email } = req.body;
+
+    if (!email) {
+
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+
+    }
+
+    await forgotPassword(email);
+
+    
+
+    return res.status(200).json({
+
+      success: true,
+
+      message:
+        "If an account exists with this email, a password reset OTP has been sent.",
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Forgot password error:",
+      error
+    );
+
+    return res.status(500).json({
+
+      success: false,
+
+      message:
+        "Unable to process password reset request",
+
+    });
+
+  }
+};
+
+
+// VERIFY OTP
+
+const verifyResetOTPController = async (req, res) => {
+
+  try {
+
+    const {
+      email,
+      otp
+    } = req.body;
+
+    if (!email || !otp) {
+
+      return res.status(400).json({
+
+        success: false,
+
+        message:
+          "Email and OTP are required",
+
+      });
+
+    }
+
+    await verifyResetOTP({
+      email,
+      otp,
+    });
+
+    return res.status(200).json({
+
+      success: true,
+
+      message:
+        "OTP verified successfully",
+
+    });
+
+  } catch (error) {
+
+    return res.status(400).json({
+
+      success: false,
+
+      message: error.message,
+
+    });
+
+  }
+};
+
+
+// RESET PASSWORD
+
+const resetPasswordController = async (req, res) => {
+
+  try {
+
+    const {
+      email,
+      newPassword
+    } = req.body;
+
+    if (!email || !newPassword) {
+
+      return res.status(400).json({
+
+        success: false,
+
+        message:
+          "Email and new password are required",
+
+      });
+
+    }
+
+    await resetPassword({
+      email,
+      newPassword,
+    });
+
+    return res.status(200).json({
+
+      success: true,
+
+      message:
+        "Password reset successfully",
+
+    });
+
+  } catch (error) {
+
+    return res.status(400).json({
+
+      success: false,
+
+      message: error.message,
+
+    });
+
+  }
+};
+
+
 module.exports = {
   register,
   login,
   getMe,
   adminTest,
+  forgotPasswordController,
+  verifyResetOTPController,
+  resetPasswordController,
 };

@@ -9,13 +9,10 @@ const createIssue = async(req,res) => {
         const {
             title, 
             description,
-            //  category, 
-            //  departmentId, 
-             location, 
-             media
+             location
         } = req.body;
 
-        const { latitude, longitude } = location;
+const { latitude, longitude } = JSON.parse(location);
 
 
 
@@ -54,8 +51,6 @@ const createIssue = async(req,res) => {
             reportedBy: req.user.userId,  // fetch from JWT authentication
             title,
             description,
-            // category,
-            // departmentId,
             location: {
                 type: "Point",
                 coordinates: [longitude, latitude],
@@ -84,7 +79,7 @@ const createIssue = async(req,res) => {
     }
 };
 
-
+// Get all issues controller
 
 const getIssues = async(req,res) => {
     try{
@@ -152,7 +147,7 @@ const checkDuplicateIssue = async (req, res) => {
     }
 };
 
-
+// Upvote issue controller
 
 const upvoteIssue = async (req,res) => {
 
@@ -199,7 +194,7 @@ const upvoteIssue = async (req,res) => {
     }
 };
 
-
+// Update issue status controller
 
 const updateIssueStatus = async(req,res) => {
     try{
@@ -315,35 +310,6 @@ const assignIssue = async(req,res) => {
             });
         }
 
-
-
-      
-
-
-
-
-
-
-// console.log("ISSUE ID:", issue._id);
-// console.log("ISSUE DEPARTMENT:", issue.departmentId);
-
-// console.log("OFFICER ID:", officer._id);
-// console.log("OFFICER DEPARTMENT:", officer.departmentId);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if (!issue.departmentId || !officer.departmentId) {
     return res.status(400).json({
         success: false,
@@ -363,21 +329,11 @@ if (!issue.departmentId.equals(officer.departmentId)) {
         issue.status = "ASSIGNED";
 
         await issue.save();
-
-
         return res.status(200).json({
             success:true,
             message:"Issue assigned successfully",
             issue,
         });
-
-
-
-
-
-
-
-
     }
 
     catch(error){
@@ -388,8 +344,54 @@ if (!issue.departmentId.equals(officer.departmentId)) {
     }
 };
 
+// get issues of the particlar user
+const getMyIssues = async (req, res) => {
+    try {
+        const issues = await Issue.find({
+            reportedBy: req.user.userId
+        });
 
+        return res.status(200).json({
+            success: true,
+            issues
+        });
 
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+const getIssueById = async (req, res) => {
+    try {
+        const { issueId } = req.params;
+
+        const issue = await Issue.findById(issueId)
+            .populate("reportedBy", "name email phone")
+            .populate("departmentId", "departmentName code")
+            .populate("assignedTo", "name email phone");
+
+        if (!issue) {
+            return res.status(404).json({
+                success: false,
+                message: "Issue not found"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            issue
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
 
 module.exports = {
     createIssue,
@@ -398,5 +400,6 @@ module.exports = {
     upvoteIssue,
     updateIssueStatus,
     assignIssue,
-
+    getMyIssues,
+    getIssueById
 };
