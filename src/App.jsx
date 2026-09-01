@@ -19,6 +19,7 @@ import AdminIssues from "./pages/AdminIssues";
 import OfficerDashboard from "./pages/OfficerDashboard";
 import Officers from "./pages/Officers";
 import ReportIssue from "./pages/ReportIssue";
+import MyIssues from "./pages/MyIssues";
 
 function App() {
   return (
@@ -64,6 +65,16 @@ function App() {
           }
         />
 
+{/* MY ISSUES */}
+
+<Route
+  path="/issues"
+  element={
+    <ProtectedRoute>
+      <MyIssues />
+    </ProtectedRoute>
+  }
+/>
 
         {/* ADMIN DASHBOARD */}
 
