@@ -120,6 +120,7 @@ function ReportIssue() {
       if (finalTranscript) {
         setDescription((previous) => {
           const separator = previous.trim() ? " " : "";
+
           return (
             previous +
             separator +
@@ -171,11 +172,20 @@ function ReportIssue() {
 
     if (!file) return;
 
+    // Only allow images
+    if (!file.type.startsWith("image/")) {
+      setError("Please select a valid image file.");
+      return;
+    }
+
     setImage(file);
     setImagePreview(URL.createObjectURL(file));
     setError("");
   };
 
+  // --------------------------------------------------
+  // REMOVE IMAGE
+  // --------------------------------------------------
   const removeImage = () => {
     setImage(null);
     setImagePreview("");
@@ -210,7 +220,7 @@ function ReportIssue() {
     try {
       recognitionRef.current.start();
     } catch (error) {
-      console.error(error);
+      console.error("Voice start error:", error);
     }
   };
 
@@ -223,18 +233,19 @@ function ReportIssue() {
     setError("");
     setMessage("");
 
+    // Check image
     if (!image) {
       setError("Please upload an image of the issue.");
       return;
     }
 
+    // Check description
     if (!description.trim()) {
-      setError(
-        "Please describe the issue using the voice button."
-      );
+      setError("Please describe the issue.");
       return;
     }
 
+    // Check location
     if (
       location.latitude === null ||
       location.longitude === null
@@ -245,6 +256,7 @@ function ReportIssue() {
       return;
     }
 
+    // Check authentication
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -257,20 +269,57 @@ function ReportIssue() {
     try {
       const formData = new FormData();
 
-      formData.append("image", image);
+      // -----------------------------------------------
+      // TITLE
+      // Backend requires title.
+      // We generate a short title from the description.
+      // -----------------------------------------------
+      const title =
+        description.trim().length > 60
+          ? description.trim().substring(0, 60)
+          : description.trim();
+
+      formData.append("title", title);
+
+      // -----------------------------------------------
+      // DESCRIPTION
+      // -----------------------------------------------
       formData.append(
         "description",
         description.trim()
       );
+
+      // -----------------------------------------------
+      // LOCATION
+      // Backend expects:
+      // JSON.parse(location)
+      // -----------------------------------------------
       formData.append(
-        "latitude",
-        String(location.latitude)
-      );
-      formData.append(
-        "longitude",
-        String(location.longitude)
+        "location",
+        JSON.stringify({
+          latitude: location.latitude,
+          longitude: location.longitude,
+        })
       );
 
+      // -----------------------------------------------
+      // IMAGE
+      // Backend expects req.files.image
+      // -----------------------------------------------
+      formData.append("image", image);
+
+      console.log("Submitting issue...");
+      console.log("Title:", title);
+      console.log("Description:", description.trim());
+      console.log("Location:", {
+        latitude: location.latitude,
+        longitude: location.longitude,
+      });
+      console.log("Image:", image.name);
+
+      // -----------------------------------------------
+      // API REQUEST
+      // -----------------------------------------------
       const response = await fetch(
         "http://localhost:5000/api/issues",
         {
@@ -282,21 +331,51 @@ function ReportIssue() {
         }
       );
 
-      const data = await response.json();
+      // Read response safely
+      const responseText = await response.text();
 
+      let data = null;
+
+      if (responseText) {
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error(
+            "Response JSON parse error:",
+            parseError
+          );
+
+          throw new Error(
+            `Server returned an invalid response. Status: ${response.status}`
+          );
+        }
+      }
+
+      // -----------------------------------------------
+      // HANDLE BACKEND ERROR
+      // -----------------------------------------------
       if (!response.ok) {
         throw new Error(
-          data.message ||
-            "Failed to submit issue."
+          data?.message ||
+            `Failed to submit issue. Status: ${response.status}`
         );
       }
 
+      // -----------------------------------------------
+      // SUCCESS
+      // -----------------------------------------------
       console.log("Issue created:", data);
 
       setMessage(
         "Your issue has been reported successfully."
       );
 
+      // Clear form
+      setImage(null);
+      setImagePreview("");
+      setDescription("");
+
+      // Redirect to dashboard
       setTimeout(() => {
         navigate("/dashboard");
       }, 1500);
@@ -828,7 +907,7 @@ function ReportIssue() {
 
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png"
                     onChange={handleImageChange}
                     hidden
                   />
@@ -940,11 +1019,9 @@ function ReportIssue() {
                 <textarea
                   value={description}
                   onChange={(event) =>
-                    setDescription(
-                      event.target.value
-                    )
+                    setDescription(event.target.value)
                   }
-                  placeholder="Your voice description will appear here..."
+                  placeholder="Describe the civic issue here..."
                   rows={5}
                 />
 
@@ -953,9 +1030,7 @@ function ReportIssue() {
                   <button
                     type="button"
                     className={`voice-button ${
-                      isListening
-                        ? "recording"
-                        : ""
+                      isListening ? "recording" : ""
                     }`}
                     onClick={handleVoiceInput}
                     disabled={!speechSupported}
@@ -1042,3 +1117,4 @@ function ReportIssue() {
 }
 
 export default ReportIssue;
+
