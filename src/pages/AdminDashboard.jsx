@@ -1,1448 +1,1382 @@
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-    ClipboardList,
-    Users,
-    UserCog,
-    AlertCircle,
-    CheckCircle2,
-    Clock3,
-    ArrowUpRight,
-    MapPin,
-    Loader2,
+  ClipboardList,
+  Users,
+  UserCog,
+  AlertCircle,
+  CheckCircle2,
+  Clock3,
+  ArrowUpRight,
+  MapPin,
+  Loader2,
+  RefreshCw,
+  UserPlus,
 } from "lucide-react";
 
 import api from "../services/api";
 
 function AdminDashboard() {
-    const [issues, setIssues] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+  const [issues, setIssues] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
 
-    useEffect(() => {
-        fetchIssues();
-    }, []);
+  // =========================================================
+  // FETCH ISSUES
+  // =========================================================
 
-    const fetchIssues = async () => {
-        try {
-            setLoading(true);
-            setError("");
+  const fetchIssues = async () => {
+    try {
+      setError("");
 
-            const response = await api.get("/issues");
+      const response = await api.get("/issues");
 
-            setIssues(response.data?.issues || []);
-        } catch (err) {
-            console.error("Failed to fetch admin issues:", err);
+      console.log("ISSUES FROM BACKEND:", response.data);
 
-            setError(
-                err.response?.data?.message ||
-                "Unable to load dashboard data."
-            );
-        } finally {
-            setLoading(false);
+      const fetchedIssues = response.data?.issues || [];
+
+      setIssues(Array.isArray(fetchedIssues) ? fetchedIssues : []);
+    } catch (err) {
+      console.error("Failed to fetch issues:", err);
+
+      setError(
+        err.response?.data?.message ||
+          "Failed to fetch issues. Please try again."
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchIssues();
+  }, []);
+
+  // =========================================================
+  // REFRESH
+  // =========================================================
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchIssues();
+  };
+
+  // =========================================================
+  // NORMALIZE STATUS
+  // =========================================================
+
+  const normalizeStatus = (status) => {
+    return String(status || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+  };
+
+  // =========================================================
+  // CHECK ASSIGNMENT
+  // =========================================================
+
+  const isAssigned = (issue) => {
+    if (!issue) return false;
+
+    const status = normalizeStatus(issue.status);
+
+    const possibleAssignmentValues = [
+      issue.assignedTo,
+      issue.assignedOfficer,
+      issue.officer,
+      issue.assigned_to,
+      issue.assignedOfficerId,
+      issue.officerId,
+    ];
+
+    const hasAssignedOfficer = possibleAssignmentValues.some((value) => {
+      if (value === null || value === undefined || value === "") {
+        return false;
+      }
+
+      if (typeof value === "object") {
+        if (Array.isArray(value)) {
+          return value.length > 0;
         }
-    };
 
-    // =========================
-    // ISSUE COUNTS
-    // =========================
+        return (
+          Object.keys(value).length > 0 &&
+          Boolean(
+            value._id ||
+              value.id ||
+              value.name ||
+              value.email
+          )
+        );
+      }
 
-    const totalIssues = issues.length;
-
-    const reportedIssues = issues.filter(
-        (issue) => issue.status === "REPORTED"
-    ).length;
-
-    const verifiedIssues = issues.filter(
-        (issue) => issue.status === "VERIFIED"
-    ).length;
-
-    const assignedIssues = issues.filter(
-        (issue) => issue.status === "ASSIGNED"
-    ).length;
-
-    const inProgressIssues = issues.filter(
-        (issue) => issue.status === "IN_PROGRESS"
-    ).length;
-
-    const resolvedIssues = issues.filter(
-        (issue) => issue.status === "RESOLVED"
-    ).length;
-
-    const unassignedIssues = issues.filter(
-        (issue) => !issue.assignedTo
-    ).length;
-
-    const recentIssues = [...issues]
-        .sort(
-            (a, b) =>
-                new Date(b.createdAt || 0) -
-                new Date(a.createdAt || 0)
-        )
-        .slice(0, 5);
-
-    // =========================
-    // STATUS HELPERS
-    // =========================
-
-    const getStatusClass = (status) => {
-        switch (status) {
-            case "RESOLVED":
-                return "resolved";
-
-            case "IN_PROGRESS":
-                return "progress";
-
-            case "ASSIGNED":
-                return "assigned";
-
-            case "VERIFIED":
-                return "verified";
-
-            default:
-                return "reported";
-        }
-    };
-
-    const formatStatus = (status) => {
-        return status?.replace("_", " ") || "REPORTED";
-    };
-
-    // =========================
-    // UI
-    // =========================
+      return true;
+    });
 
     return (
-        <>
-            <style>{`
-                * {
-                    box-sizing: border-box;
-                }
-
-                .admin-dashboard {
-                    min-height: 100vh;
-                    background: #f5f8fb;
-                    color: #173b59;
-                    font-family:
-                        Inter,
-                        -apple-system,
-                        BlinkMacSystemFont,
-                        "Segoe UI",
-                        sans-serif;
-                }
-
-                /* ================= NAVBAR ================= */
-
-                .admin-navbar {
-                    height: 82px;
-                    background: #ffffff;
-                    border-bottom: 1px solid #e4edf2;
-                    display: flex;
-                    align-items: center;
-                    padding: 0 5%;
-                    gap: 40px;
-                    position: sticky;
-                    top: 0;
-                    z-index: 20;
-                }
-
-                .admin-brand {
-                    display: flex;
-                    align-items: center;
-                    gap: 13px;
-                    text-decoration: none;
-                    min-width: 270px;
-                }
-
-                .admin-logo {
-                    width: 44px;
-                    height: 44px;
-                    border-radius: 12px;
-                    background: #079dcc;
-                    color: white;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 22px;
-                    font-weight: 800;
-                    box-shadow: 0 5px 12px rgba(7, 157, 204, 0.18);
-                }
-
-                .admin-brand h2 {
-                    margin: 0;
-                    font-size: 21px;
-                    color: #173b59;
-                    font-weight: 750;
-                    line-height: 1.1;
-                }
-
-                .admin-brand span {
-                    display: block;
-                    margin-top: 3px;
-                    color: #8195a5;
-                    font-size: 9px;
-                    letter-spacing: 0.3px;
-                }
-
-                .admin-nav-links {
-                    height: 100%;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    flex: 1;
-                }
-
-                .admin-nav-links a {
-                    height: 100%;
-                    padding: 0 16px;
-                    display: flex;
-                    align-items: center;
-                    position: relative;
-                    text-decoration: none;
-                    color: #647c8e;
-                    font-size: 13px;
-                    font-weight: 600;
-                    transition: 0.2s ease;
-                }
-
-                .admin-nav-links a:hover {
-                    color: #079dcc;
-                }
-
-                .admin-nav-links a.active {
-                    color: #079dcc;
-                }
-
-                .admin-nav-links a.active::after {
-                    content: "";
-                    position: absolute;
-                    bottom: 0;
-                    left: 16px;
-                    right: 16px;
-                    height: 3px;
-                    background: #08a8dc;
-                    border-radius: 3px 3px 0 0;
-                }
-
-                .admin-nav-right {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }
-
-                .admin-avatar {
-                    width: 42px;
-                    height: 42px;
-                    border-radius: 50%;
-                    background: #e2f5fb;
-                    color: #078db9;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 15px;
-                    font-weight: 750;
-                }
-
-                .admin-profile {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 2px;
-                }
-
-                .admin-profile strong {
-                    font-size: 13px;
-                    color: #173b59;
-                }
-
-                .admin-profile small {
-                    font-size: 9px;
-                    color: #8497a5;
-                }
-
-                /* ================= MAIN ================= */
-
-                .admin-content {
-                    max-width: 1380px;
-                    margin: 0 auto;
-                    padding: 42px 38px 60px;
-                }
-
-                /* ================= HEADER ================= */
-
-                .admin-page-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-end;
-                    margin-bottom: 28px;
-                    gap: 20px;
-                }
-
-                .admin-eyebrow {
-                    display: inline-block;
-                    color: #079dcc;
-                    font-size: 11px;
-                    font-weight: 750;
-                    letter-spacing: 1.5px;
-                    margin-bottom: 8px;
-                }
-
-                .admin-page-header h1 {
-                    margin: 0;
-                    font-size: 32px;
-                    line-height: 1.2;
-                    color: #173b59;
-                    font-weight: 750;
-                }
-
-                .admin-page-header p {
-                    margin: 8px 0 0;
-                    color: #728898;
-                    font-size: 14px;
-                }
-
-                .admin-refresh-button {
-                    border: 1px solid #d5e4eb;
-                    background: white;
-                    color: #087fae;
-                    border-radius: 9px;
-                    padding: 10px 17px;
-                    font-size: 13px;
-                    font-weight: 650;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    transition: all 0.2s ease;
-                    box-shadow: 0 3px 10px rgba(30, 70, 100, 0.04);
-                }
-
-                .admin-refresh-button:hover:not(:disabled) {
-                    border-color: #9dd9eb;
-                    background: #f2fbfe;
-                    transform: translateY(-1px);
-                }
-
-                .admin-refresh-button:disabled {
-                    opacity: 0.7;
-                    cursor: not-allowed;
-                }
-
-                .spin {
-                    animation: admin-spin 0.8s linear infinite;
-                }
-
-                @keyframes admin-spin {
-                    to {
-                        transform: rotate(360deg);
-                    }
-                }
-
-                /* ================= ERROR ================= */
-
-                .admin-error {
-                    background: #fff2f2;
-                    border: 1px solid #f2cccc;
-                    color: #b33b3b;
-                    padding: 13px 16px;
-                    border-radius: 10px;
-                    margin-bottom: 22px;
-                    font-size: 13px;
-                }
-
-                /* ================= STAT CARDS ================= */
-
-                .admin-stats-grid {
-                    display: grid;
-                    grid-template-columns: repeat(4, 1fr);
-                    gap: 18px;
-                    margin-bottom: 24px;
-                }
-
-                .admin-stat-card {
-                    background: #ffffff;
-                    border: 1px solid #e1eaf0;
-                    border-radius: 15px;
-                    padding: 22px;
-                    min-height: 125px;
-                    display: flex;
-                    align-items: center;
-                    gap: 16px;
-                    box-shadow: 0 4px 15px rgba(25, 65, 95, 0.045);
-                    transition: 0.2s ease;
-                }
-
-                .admin-stat-card:hover {
-                    transform: translateY(-3px);
-                    box-shadow: 0 9px 24px rgba(25, 65, 95, 0.08);
-                }
-
-                .admin-stat-icon {
-                    width: 52px;
-                    height: 52px;
-                    min-width: 52px;
-                    border-radius: 13px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                .admin-stat-icon.blue {
-                    background: #e4f7fd;
-                    color: #08a3d5;
-                }
-
-                .admin-stat-icon.orange {
-                    background: #fff3df;
-                    color: #ed9808;
-                }
-
-                .admin-stat-icon.purple {
-                    background: #f0eaff;
-                    color: #815bd1;
-                }
-
-                .admin-stat-icon.green {
-                    background: #e3f9ef;
-                    color: #0aae76;
-                }
-
-                .admin-stat-card > div:last-child {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 6px;
-                }
-
-                .admin-stat-card span {
-                    color: #7a8f9f;
-                    font-size: 12px;
-                    font-weight: 550;
-                }
-
-                .admin-stat-card strong {
-                    color: #173b59;
-                    font-size: 28px;
-                    line-height: 1;
-                    font-weight: 750;
-                }
-
-                /* ================= STATUS SUMMARY ================= */
-
-                .admin-status-summary {
-                    background: white;
-                    border: 1px solid #e1eaf0;
-                    border-radius: 15px;
-                    padding: 23px 25px;
-                    margin-bottom: 24px;
-                    box-shadow: 0 4px 15px rgba(25, 65, 95, 0.04);
-                }
-
-                .admin-panel-header {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    gap: 15px;
-                    margin-bottom: 18px;
-                }
-
-                .admin-panel-header h2 {
-                    margin: 0;
-                    color: #173b59;
-                    font-size: 17px;
-                    font-weight: 700;
-                }
-
-                .admin-panel-header p {
-                    margin: 5px 0 0;
-                    color: #8295a3;
-                    font-size: 11px;
-                }
-
-                .status-summary-grid {
-                    display: grid;
-                    grid-template-columns: repeat(5, 1fr);
-                    gap: 12px;
-                }
-
-                .status-summary-grid > div {
-                    background: #f8fafc;
-                    border: 1px solid #edf2f5;
-                    border-radius: 10px;
-                    padding: 14px 15px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    transition: 0.2s ease;
-                }
-
-                .status-summary-grid > div:hover {
-                    background: #f3f9fc;
-                    border-color: #d9edf4;
-                }
-
-                .status-summary-grid span {
-                    color: #6e8495;
-                    font-size: 12px;
-                }
-
-                .status-summary-grid strong {
-                    color: #173b59;
-                    font-size: 17px;
-                }
-
-                /* ================= MAIN GRID ================= */
-
-                .admin-main-grid {
-                    display: grid;
-                    grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.75fr);
-                    gap: 24px;
-                    align-items: start;
-                }
-
-                .admin-panel,
-                .admin-quick-panel {
-                    background: white;
-                    border: 1px solid #e1eaf0;
-                    border-radius: 15px;
-                    box-shadow: 0 4px 15px rgba(25, 65, 95, 0.04);
-                }
-
-                .admin-panel {
-                    padding: 24px;
-                }
-
-                .admin-quick-panel {
-                    padding: 24px;
-                }
-
-                .panel-link {
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                    color: #079dcc;
-                    text-decoration: none;
-                    font-size: 11px;
-                    font-weight: 700;
-                }
-
-                .panel-link:hover {
-                    text-decoration: underline;
-                }
-
-                /* ================= RECENT ISSUES ================= */
-
-                .admin-recent-list {
-                    border-top: 1px solid #edf2f5;
-                }
-
-                .admin-recent-item {
-                    min-height: 78px;
-                    display: flex;
-                    align-items: center;
-                    gap: 14px;
-                    padding: 14px 4px;
-                    border-bottom: 1px solid #edf2f5;
-                }
-
-                .admin-recent-item:last-child {
-                    border-bottom: none;
-                }
-
-                .admin-recent-icon {
-                    width: 42px;
-                    height: 42px;
-                    min-width: 42px;
-                    border-radius: 11px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                .admin-recent-icon.reported {
-                    background: #fff4df;
-                    color: #e39709;
-                }
-
-                .admin-recent-icon.verified {
-                    background: #eaf2ff;
-                    color: #427dca;
-                }
-
-                .admin-recent-icon.assigned {
-                    background: #f0eaff;
-                    color: #8059ce;
-                }
-
-                .admin-recent-icon.progress {
-                    background: #e4f8fd;
-                    color: #078caf;
-                }
-
-                .admin-recent-icon.resolved {
-                    background: #e3f9ef;
-                    color: #0ba875;
-                }
-
-                .admin-recent-info {
-                    min-width: 0;
-                    flex: 1;
-                }
-
-                .admin-recent-title-row {
-                    display: flex;
-                    align-items: center;
-                    gap: 9px;
-                    margin-bottom: 6px;
-                }
-
-                .admin-recent-title-row strong {
-                    color: #25465e;
-                    font-size: 13px;
-                    font-weight: 650;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                }
-
-                .admin-status {
-                    flex-shrink: 0;
-                    padding: 4px 8px;
-                    border-radius: 20px;
-                    font-size: 9px;
-                    font-weight: 750;
-                    letter-spacing: 0.2px;
-                }
-
-                .admin-status.reported {
-                    background: #fff3dc;
-                    color: #bf7800;
-                }
-
-                .admin-status.verified {
-                    background: #e9f1ff;
-                    color: #3970b8;
-                }
-
-                .admin-status.assigned {
-                    background: #f0eaff;
-                    color: #7652bf;
-                }
-
-                .admin-status.progress {
-                    background: #e4f8fd;
-                    color: #087c9e;
-                }
-
-                .admin-status.resolved {
-                    background: #e2f8ee;
-                    color: #07865b;
-                }
-
-                .admin-issue-meta {
-                    display: flex;
-                    align-items: center;
-                    gap: 13px;
-                    color: #8799a6;
-                    font-size: 10px;
-                }
-
-                .admin-issue-meta span {
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                }
-
-                .admin-issue-arrow {
-                    width: 32px;
-                    height: 32px;
-                    min-width: 32px;
-                    border-radius: 8px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: #8aa1b0;
-                    background: #f6f9fb;
-                    text-decoration: none;
-                    transition: 0.2s ease;
-                }
-
-                .admin-issue-arrow:hover {
-                    color: #079dcc;
-                    background: #eaf8fc;
-                }
-
-                /* ================= QUICK ACTIONS ================= */
-
-                .admin-quick-panel > .admin-panel-header {
-                    margin-bottom: 13px;
-                }
-
-                .admin-quick-panel > a {
-                    display: flex;
-                    align-items: center;
-                    gap: 11px;
-                    padding: 12px 8px;
-                    border-top: 1px solid #edf2f5;
-                    text-decoration: none;
-                    transition: 0.2s ease;
-                }
-
-                .admin-quick-panel > a:hover {
-                    background: #f8fbfd;
-                    border-radius: 8px;
-                }
-
-                .quick-action-icon {
-                    width: 38px;
-                    height: 38px;
-                    min-width: 38px;
-                    border-radius: 9px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                .quick-action-icon.blue {
-                    background: #e5f7fc;
-                    color: #079dcc;
-                }
-
-                .quick-action-icon.green {
-                    background: #e4f9ef;
-                    color: #0aab73;
-                }
-
-                .quick-action-icon.purple {
-                    background: #f0eaff;
-                    color: #8059ce;
-                }
-
-                .admin-quick-panel > a > div:nth-child(2) {
-                    flex: 1;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 3px;
-                }
-
-                .admin-quick-panel > a strong {
-                    color: #284961;
-                    font-size: 12px;
-                }
-
-                .admin-quick-panel > a span {
-                    color: #8a9ba8;
-                    font-size: 10px;
-                }
-
-                .admin-quick-panel > a > svg {
-                    color: #9aaab5;
-                }
-
-                /* ================= UNASSIGNED ================= */
-
-                .unassigned-panel {
-                    margin-top: 15px;
-                    padding: 16px;
-                    border: 1px solid #f0dfbd;
-                    background: #fffaf1;
-                    border-radius: 12px;
-                    display: flex;
-                    align-items: center;
-                    gap: 11px;
-                }
-
-                .unassigned-icon {
-                    width: 39px;
-                    height: 39px;
-                    min-width: 39px;
-                    border-radius: 10px;
-                    background: #fff0d1;
-                    color: #dc8b0a;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                .unassigned-panel > div:nth-child(2) {
-                    flex: 1;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
-                }
-
-                .unassigned-panel span {
-                    color: #92754b;
-                    font-size: 10px;
-                }
-
-                .unassigned-panel strong {
-                    color: #795720;
-                    font-size: 20px;
-                }
-
-                .unassigned-panel > a {
-                    color: #b7873c;
-                    display: flex;
-                }
-
-                /* ================= LOADING / EMPTY ================= */
-
-                .admin-loading {
-                    padding: 45px 10px;
-                    text-align: center;
-                    color: #8194a3;
-                    font-size: 13px;
-                }
-
-                .admin-empty {
-                    padding: 45px 20px;
-                    text-align: center;
-                    color: #8194a3;
-                }
-
-                .admin-empty svg {
-                    color: #9db0bd;
-                    margin-bottom: 7px;
-                }
-
-                .admin-empty h3 {
-                    margin: 0;
-                    color: #405d72;
-                    font-size: 14px;
-                }
-
-                .admin-empty p {
-                    margin: 6px 0 0;
-                    color: #8b9ca8;
-                    font-size: 11px;
-                }
-
-                /* ================= RESPONSIVE ================= */
-
-                @media (max-width: 1100px) {
-
-                    .admin-navbar {
-                        padding: 0 3%;
-                        gap: 20px;
-                    }
-
-                    .admin-brand {
-                        min-width: 210px;
-                    }
-
-                    .admin-content {
-                        padding: 35px 28px 50px;
-                    }
-
-                    .admin-stats-grid {
-                        grid-template-columns: repeat(2, 1fr);
-                    }
-
-                    .admin-main-grid {
-                        grid-template-columns: 1fr;
-                    }
-
-                    .status-summary-grid {
-                        grid-template-columns: repeat(3, 1fr);
-                    }
-                }
-
-                @media (max-width: 750px) {
-
-                    .admin-navbar {
-                        height: auto;
-                        min-height: 70px;
-                        padding: 12px 18px;
-                        flex-wrap: wrap;
-                    }
-
-                    .admin-brand {
-                        min-width: 0;
-                        flex: 1;
-                    }
-
-                    .admin-nav-links {
-                        order: 3;
-                        width: 100%;
-                        height: 45px;
-                        overflow-x: auto;
-                    }
-
-                    .admin-nav-links a {
-                        height: 45px;
-                    }
-
-                    .admin-profile {
-                        display: none;
-                    }
-
-                    .admin-content {
-                        padding: 28px 18px 45px;
-                    }
-
-                    .admin-page-header {
-                        align-items: flex-start;
-                        flex-direction: column;
-                    }
-
-                    .admin-page-header h1 {
-                        font-size: 27px;
-                    }
-
-                    .admin-refresh-button {
-                        align-self: flex-start;
-                    }
-
-                    .admin-stats-grid {
-                        grid-template-columns: 1fr;
-                    }
-
-                    .status-summary-grid {
-                        grid-template-columns: repeat(2, 1fr);
-                    }
-
-                    .admin-recent-title-row {
-                        align-items: flex-start;
-                        flex-direction: column;
-                        gap: 5px;
-                    }
-                }
-
-                @media (max-width: 480px) {
-
-                    .status-summary-grid {
-                        grid-template-columns: 1fr;
-                    }
-
-                    .admin-panel,
-                    .admin-quick-panel,
-                    .admin-status-summary {
-                        padding: 18px;
-                    }
-
-                    .admin-recent-item {
-                        align-items: flex-start;
-                    }
-
-                    .admin-issue-arrow {
-                        display: none;
-                    }
-
-                    .admin-issue-meta {
-                        flex-direction: column;
-                        align-items: flex-start;
-                        gap: 4px;
-                    }
-                }
-            `}</style>
-
-            <div className="admin-dashboard">
-
-                {/* ================= NAVBAR ================= */}
-
-                <header className="admin-navbar">
-
-                    <Link to="/admin" className="admin-brand">
-
-                        <div className="admin-logo">
-                            R
-                        </div>
-
-                        <div>
-                            <h2>ResolveX</h2>
-                            <span>Administration Portal</span>
-                        </div>
-
-                    </Link>
-
-                    <nav className="admin-nav-links">
-
-                        <Link
-                            to="/admin"
-                            className="active"
-                        >
-                            Dashboard
-                        </Link>
-
-                        <Link to="/admin/issues">
-                            Issues
-                        </Link>
-
-                        <Link to="/admin/officers">
-                            Officers
-                        </Link>
-
-                        <Link to="/admin/citizens">
-                            Citizens
-                        </Link>
-
-                    </nav>
-
-                    <div className="admin-nav-right">
-
-                        <div className="admin-avatar">
-                            A
-                        </div>
-
-                        <div className="admin-profile">
-                            <strong>Admin</strong>
-                            <small>Administrator</small>
-                        </div>
-
+      hasAssignedOfficer ||
+      status === "assigned" ||
+      status === "in_progress" ||
+      status === "inprogress"
+    );
+  };
+
+  // =========================================================
+  // STATISTICS
+  // =========================================================
+
+  const totalIssues = issues.length;
+
+  const reportedIssues = issues.filter((issue) => {
+    const status = normalizeStatus(issue.status);
+
+    return (
+      status === "reported" ||
+      status === "pending" ||
+      status === "submitted"
+    );
+  }).length;
+
+  const assignedIssues = issues.filter((issue) =>
+    isAssigned(issue)
+  ).length;
+
+  const inProgressIssues = issues.filter((issue) => {
+    const status = normalizeStatus(issue.status);
+
+    return (
+      status === "in_progress" ||
+      status === "inprogress"
+    );
+  }).length;
+
+  const resolvedIssues = issues.filter((issue) => {
+    const status = normalizeStatus(issue.status);
+
+    return (
+      status === "resolved" ||
+      status === "completed" ||
+      status === "closed"
+    );
+  }).length;
+
+  const awaitingAssignment = issues.filter(
+    (issue) => !isAssigned(issue)
+  ).length;
+
+  // =========================================================
+  // STATUS HELPERS
+  // =========================================================
+
+  const getStatusLabel = (status) => {
+    const normalized = normalizeStatus(status);
+
+    if (normalized === "reported") return "Reported";
+    if (normalized === "verified") return "Verified";
+    if (normalized === "assigned") return "Assigned";
+
+    if (
+      normalized === "in_progress" ||
+      normalized === "inprogress"
+    ) {
+      return "In Progress";
+    }
+
+    if (
+      normalized === "resolved" ||
+      normalized === "completed" ||
+      normalized === "closed"
+    ) {
+      return "Resolved";
+    }
+
+    return status || "Unknown";
+  };
+
+  const getStatusClass = (status) => {
+    const normalized = normalizeStatus(status);
+
+    if (normalized === "reported") {
+      return "status-reported";
+    }
+
+    if (normalized === "verified") {
+      return "status-verified";
+    }
+
+    if (normalized === "assigned") {
+      return "status-assigned";
+    }
+
+    if (
+      normalized === "in_progress" ||
+      normalized === "inprogress"
+    ) {
+      return "status-progress";
+    }
+
+    if (
+      normalized === "resolved" ||
+      normalized === "completed" ||
+      normalized === "closed"
+    ) {
+      return "status-resolved";
+    }
+
+    return "status-default";
+  };
+
+  // =========================================================
+  // RECENT ISSUES
+  // =========================================================
+
+  const recentIssues = [...issues]
+    .sort((a, b) => {
+      const dateA = new Date(
+        a.createdAt || a.created_at || 0
+      ).getTime();
+
+      const dateB = new Date(
+        b.createdAt || b.created_at || 0
+      ).getTime();
+
+      return dateB - dateA;
+    })
+    .slice(0, 5);
+
+  // =========================================================
+  // DATE
+  // =========================================================
+
+  const formatDate = (date) => {
+    if (!date) return "Recently";
+
+    const parsed = new Date(date);
+
+    if (Number.isNaN(parsed.getTime())) {
+      return "Recently";
+    }
+
+    return parsed.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  // =========================================================
+  // LOCATION
+  // =========================================================
+
+  const getLocation = (issue) => {
+    if (!issue) return "Location not available";
+
+    if (typeof issue.location === "string") {
+      return issue.location;
+    }
+
+    if (issue.location?.address) {
+      return issue.location.address;
+    }
+
+    if (issue.location?.name) {
+      return issue.location.name;
+    }
+
+    if (issue.location?.coordinates) {
+      const coordinates = issue.location.coordinates;
+
+      if (
+        Array.isArray(coordinates) &&
+        coordinates.length >= 2
+      ) {
+        return `${coordinates[1].toFixed(4)}, ${coordinates[0].toFixed(4)}`;
+      }
+    }
+
+    if (issue.address) {
+      return issue.address;
+    }
+
+    return "Location not available";
+  };
+
+  // =========================================================
+  // UI
+  // =========================================================
+
+  return (
+    <>
+      <style>{`
+        * {
+          box-sizing: border-box;
+        }
+
+        .admin-page {
+          min-height: 100vh;
+          background: #f6f9fc;
+          padding: 36px 45px 60px;
+          color: #173f5f;
+        }
+
+        .admin-container {
+          max-width: 1180px;
+          margin: 0 auto;
+        }
+
+        /* HEADER */
+
+        .admin-header {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          margin-bottom: 34px;
+          gap: 20px;
+        }
+
+        .admin-header-label {
+          color: #009bd5;
+          font-size: 13px;
+          font-weight: 800;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          margin-bottom: 12px;
+        }
+
+        .admin-title {
+          margin: 0;
+          font-size: 40px;
+          line-height: 1.15;
+          color: #153f61;
+          font-weight: 750;
+        }
+
+        .admin-subtitle {
+          margin: 10px 0 0;
+          color: #71879a;
+          font-size: 17px;
+        }
+
+        /* REFRESH */
+
+        .refresh-btn {
+          border: 1px solid #d8e4ed;
+          background: white;
+          color: #008dcc;
+          border-radius: 11px;
+          padding: 12px 18px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+          font-weight: 650;
+          cursor: pointer;
+          transition: 0.2s ease;
+        }
+
+        .refresh-btn:hover:not(:disabled) {
+          background: #f8fcff;
+          border-color: #bdd9e6;
+        }
+
+        .refresh-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .spin {
+          animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        /* ERROR */
+
+        .error-box {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 14px 17px;
+          margin-bottom: 24px;
+          border: 1px solid #f1caca;
+          background: #fff5f5;
+          color: #b42318;
+          border-radius: 12px;
+          font-size: 14px;
+        }
+
+        /* STATS */
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 20px;
+          margin-bottom: 25px;
+        }
+
+        .stat-card {
+          background: white;
+          border: 1px solid #dce7ef;
+          border-radius: 18px;
+          padding: 23px;
+          min-height: 145px;
+          display: flex;
+          align-items: center;
+          gap: 17px;
+          box-shadow:
+            0 3px 12px rgba(18, 63, 101, 0.035);
+        }
+
+        .stat-icon {
+          width: 59px;
+          height: 59px;
+          border-radius: 15px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .stat-icon.blue {
+          background: #e3f6fc;
+          color: #009bd6;
+        }
+
+        .stat-icon.orange {
+          background: #fff2db;
+          color: #e99a00;
+        }
+
+        .stat-icon.purple {
+          background: #eee7ff;
+          color: #7956d5;
+        }
+
+        .stat-icon.green {
+          background: #ddf7ed;
+          color: #08ad75;
+        }
+
+        .stat-info {
+          min-width: 0;
+        }
+
+        .stat-info span {
+          display: block;
+          color: #71889c;
+          font-size: 14px;
+          margin-bottom: 8px;
+        }
+
+        .stat-info strong {
+          display: block;
+          color: #153f61;
+          font-size: 35px;
+          line-height: 1;
+          font-weight: 750;
+        }
+
+        /* MAIN GRID */
+
+        .dashboard-grid {
+          display: grid;
+          grid-template-columns: 0.95fr 1.35fr;
+          gap: 22px;
+          margin-bottom: 22px;
+        }
+
+        .dashboard-card {
+          background: white;
+          border: 1px solid #dce7ef;
+          border-radius: 18px;
+          padding: 24px;
+          box-shadow:
+            0 3px 12px rgba(18, 63, 101, 0.035);
+        }
+
+        .section-heading,
+        .panel-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 15px;
+          margin-bottom: 22px;
+        }
+
+        .section-heading h2,
+        .panel-header h2 {
+          margin: 0;
+          color: #153f61;
+          font-size: 19px;
+          font-weight: 700;
+        }
+
+        .section-heading p,
+        .panel-header p {
+          margin: 6px 0 0;
+          color: #7d92a3;
+          font-size: 13px;
+        }
+
+        .view-all {
+          color: #008dcc;
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 13px;
+          font-weight: 650;
+        }
+
+        .view-all:hover {
+          text-decoration: underline;
+        }
+
+        /* STATUS */
+
+        .status-row {
+          margin-bottom: 20px;
+        }
+
+        .status-row:last-child {
+          margin-bottom: 0;
+        }
+
+        .status-row-top {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 8px;
+        }
+
+        .status-name {
+          color: #5f778b;
+          font-size: 14px;
+        }
+
+        .status-count {
+          color: #153f61;
+          font-weight: 700;
+          font-size: 14px;
+        }
+
+        .progress-track {
+          width: 100%;
+          height: 8px;
+          border-radius: 20px;
+          background: #edf2f6;
+          overflow: hidden;
+        }
+
+        .progress-bar {
+          height: 100%;
+          border-radius: 20px;
+          background: #08a7db;
+        }
+
+        .progress-orange {
+          background: #eba022;
+        }
+
+        .progress-purple {
+          background: #7c57d9;
+        }
+
+        .progress-green {
+          background: #0ab77b;
+        }
+
+        /* RECENT ISSUES */
+
+        .issues-list {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .issue-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 15px;
+          padding: 14px 0;
+          border-bottom: 1px solid #edf1f4;
+        }
+
+        .issue-item:first-child {
+          padding-top: 0;
+        }
+
+        .issue-item:last-child {
+          border-bottom: none;
+          padding-bottom: 0;
+        }
+
+        .issue-main {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .issue-title {
+          color: #16466b;
+          font-size: 14px;
+          font-weight: 650;
+          margin-bottom: 6px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .issue-location {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          color: #8297a8;
+          font-size: 12px;
+        }
+
+        .issue-right {
+          text-align: right;
+          flex-shrink: 0;
+        }
+
+        .status-badge {
+          display: inline-flex;
+          padding: 5px 9px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .status-reported {
+          background: #fff2d9;
+          color: #bd7900;
+        }
+
+        .status-verified {
+          background: #e7f0ff;
+          color: #3d70b5;
+        }
+
+        .status-assigned {
+          background: #eee6ff;
+          color: #704cc7;
+        }
+
+        .status-progress {
+          background: #e1f5fc;
+          color: #007fa9;
+        }
+
+        .status-resolved {
+          background: #dcf7ed;
+          color: #008b60;
+        }
+
+        .status-default {
+          background: #edf2f5;
+          color: #62798b;
+        }
+
+        .issue-date {
+          margin-top: 6px;
+          color: #94a5b3;
+          font-size: 11px;
+        }
+
+        .empty-state {
+          min-height: 100px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #8398a9;
+          font-size: 14px;
+        }
+
+        /* QUICK ACTIONS */
+
+        .quick-actions {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 15px;
+        }
+
+        .action-card {
+          display: flex;
+          align-items: center;
+          gap: 13px;
+          padding: 18px;
+          border: 1px solid #dce7ef;
+          border-radius: 14px;
+          text-decoration: none;
+          background: white;
+          transition: 0.2s ease;
+        }
+
+        .action-card:hover {
+          transform: translateY(-2px);
+          box-shadow:
+            0 7px 18px rgba(18, 63, 101, 0.06);
+        }
+
+        .action-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          background: #e3f6fc;
+          color: #009bd6;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .action-text {
+          flex: 1;
+        }
+
+        .action-title {
+          color: #153f61;
+          font-size: 14px;
+          font-weight: 700;
+        }
+
+        .action-description {
+          color: #8498a8;
+          font-size: 12px;
+          margin-top: 3px;
+        }
+
+        .action-arrow {
+          color: #8da0af;
+        }
+
+        /* ASSIGNMENT */
+
+        .assignment-panel {
+          margin-top: 22px;
+        }
+
+        .assignment-summary {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+        }
+
+        .assignment-left {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+
+        .assignment-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 13px;
+          background: #fff2db;
+          color: #e99a00;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .assignment-number {
+          color: #153f61;
+          font-size: 27px;
+          font-weight: 750;
+        }
+
+        .assignment-label {
+          color: #788fa1;
+          font-size: 13px;
+          margin-top: 2px;
+        }
+
+        .assign-link {
+          background: #009bd6;
+          color: white;
+          text-decoration: none;
+          border-radius: 9px;
+          padding: 10px 15px;
+          font-size: 13px;
+          font-weight: 650;
+        }
+
+        .assign-link:hover {
+          background: #0088be;
+        }
+
+        /* RESPONSIVE */
+
+        @media (max-width: 1050px) {
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .dashboard-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 700px) {
+          .admin-page {
+            padding: 25px 16px 45px;
+          }
+
+          .admin-header {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .admin-title {
+            font-size: 31px;
+          }
+
+          .refresh-btn {
+            justify-content: center;
+          }
+
+          .quick-actions {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 500px) {
+          .stats-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .assignment-summary {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .assign-link {
+            text-align: center;
+          }
+
+          .issue-item {
+            align-items: flex-start;
+          }
+
+          .issue-right {
+            max-width: 110px;
+          }
+        }
+      `}</style>
+
+      <main className="admin-page">
+        <div className="admin-container">
+
+          {/* HEADER */}
+
+          <header className="admin-header">
+            <div>
+              <div className="admin-header-label">
+                Overview
+              </div>
+
+              <h1 className="admin-title">
+                Admin Dashboard
+              </h1>
+
+              <p className="admin-subtitle">
+                Monitor civic issues and track their resolution status.
+              </p>
+            </div>
+
+            <button
+              className="refresh-btn"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCw
+                size={17}
+                className={refreshing ? "spin" : ""}
+              />
+
+              {refreshing
+                ? "Refreshing..."
+                : "Refresh"}
+            </button>
+          </header>
+
+          {/* ERROR */}
+
+          {error && (
+            <div className="error-box">
+              <AlertCircle size={19} />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* STATS */}
+
+          <section className="stats-grid">
+
+            <div className="stat-card">
+              <div className="stat-icon blue">
+                <ClipboardList size={27} />
+              </div>
+
+              <div className="stat-info">
+                <span>Total Issues</span>
+
+                <strong>
+                  {loading ? "—" : totalIssues}
+                </strong>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon orange">
+                <Clock3 size={27} />
+              </div>
+
+              <div className="stat-info">
+                <span>Reported</span>
+
+                <strong>
+                  {loading ? "—" : reportedIssues}
+                </strong>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon purple">
+                <Users size={27} />
+              </div>
+
+              <div className="stat-info">
+                <span>Assigned</span>
+
+                <strong>
+                  {loading ? "—" : assignedIssues}
+                </strong>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon green">
+                <CheckCircle2 size={27} />
+              </div>
+
+              <div className="stat-info">
+                <span>Resolved</span>
+
+                <strong>
+                  {loading ? "—" : resolvedIssues}
+                </strong>
+              </div>
+            </div>
+
+          </section>
+
+          {/* ISSUE STATUS + RECENT ISSUES */}
+
+          <section className="dashboard-grid">
+
+            {/* ISSUE STATUS */}
+
+            <section className="dashboard-card">
+
+              <div className="section-heading">
+                <div>
+                  <h2>Issue Status</h2>
+
+                  <p>
+                    Current status of all reported issues.
+                  </p>
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="empty-state">
+                  <Loader2
+                    size={22}
+                    className="spin"
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="status-row">
+                    <div className="status-row-top">
+                      <span className="status-name">
+                        Reported
+                      </span>
+
+                      <span className="status-count">
+                        {reportedIssues}
+                      </span>
                     </div>
 
-                </header>
+                    <div className="progress-track">
+                      <div
+                        className="progress-bar progress-orange"
+                        style={{
+                          width: `${
+                            totalIssues
+                              ? (reportedIssues /
+                                  totalIssues) *
+                                100
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  </div>
 
+                  <div className="status-row">
+                    <div className="status-row-top">
+                      <span className="status-name">
+                        Assigned
+                      </span>
 
-                {/* ================= MAIN ================= */}
+                      <span className="status-count">
+                        {assignedIssues}
+                      </span>
+                    </div>
 
-                <main className="admin-content">
+                    <div className="progress-track">
+                      <div
+                        className="progress-bar progress-purple"
+                        style={{
+                          width: `${
+                            totalIssues
+                              ? (assignedIssues /
+                                  totalIssues) *
+                                100
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  </div>
 
-                    {/* HEADER */}
+                  <div className="status-row">
+                    <div className="status-row-top">
+                      <span className="status-name">
+                        In Progress
+                      </span>
 
-                    <section className="admin-page-header">
+                      <span className="status-count">
+                        {inProgressIssues}
+                      </span>
+                    </div>
 
-                        <div>
+                    <div className="progress-track">
+                      <div
+                        className="progress-bar"
+                        style={{
+                          width: `${
+                            totalIssues
+                              ? (inProgressIssues /
+                                  totalIssues) *
+                                100
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  </div>
 
-                            <span className="admin-eyebrow">
-                                OVERVIEW
-                            </span>
+                  <div className="status-row">
+                    <div className="status-row-top">
+                      <span className="status-name">
+                        Resolved
+                      </span>
 
-                            <h1>
-                                Admin Dashboard
-                            </h1>
+                      <span className="status-count">
+                        {resolvedIssues}
+                      </span>
+                    </div>
 
-                            <p>
-                                Monitor civic issues and track their
-                                resolution status.
-                            </p>
+                    <div className="progress-track">
+                      <div
+                        className="progress-bar progress-green"
+                        style={{
+                          width: `${
+                            totalIssues
+                              ? (resolvedIssues /
+                                  totalIssues) *
+                                100
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
+            </section>
+
+            {/* RECENT ISSUES */}
+
+            <section className="dashboard-card">
+
+              <div className="panel-header">
+                <div>
+                  <h2>Recent Issues</h2>
+
+                  <p>
+                    Latest civic issues reported.
+                  </p>
+                </div>
+
+                <Link
+                  to="/admin/issues"
+                  className="view-all"
+                >
+                  View all
+                  <ArrowUpRight size={15} />
+                </Link>
+              </div>
+
+              {loading ? (
+                <div className="empty-state">
+                  <Loader2
+                    size={22}
+                    className="spin"
+                  />
+                </div>
+              ) : recentIssues.length === 0 ? (
+                <div className="empty-state">
+                  No issues reported yet.
+                </div>
+              ) : (
+                <div className="issues-list">
+
+                  {recentIssues.map((issue) => (
+                    <div
+                      className="issue-item"
+                      key={
+                        issue._id ||
+                        issue.id
+                      }
+                    >
+
+                      <div className="issue-main">
+
+                        <div className="issue-title">
+                          {issue.title ||
+                            issue.category ||
+                            issue.description ||
+                            "Civic Issue"}
                         </div>
 
-                        <button
-                            className="admin-refresh-button"
-                            onClick={fetchIssues}
-                            disabled={loading}
+                        <div className="issue-location">
+                          <MapPin size={13} />
+
+                          {getLocation(issue)}
+                        </div>
+
+                      </div>
+
+                      <div className="issue-right">
+
+                        <span
+                          className={`status-badge ${getStatusClass(
+                            issue.status
+                          )}`}
                         >
+                          {getStatusLabel(
+                            issue.status
+                          )}
+                        </span>
 
-                            {loading ? (
-                                <>
-                                    <Loader2
-                                        size={16}
-                                        className="spin"
-                                    />
-                                    Refreshing...
-                                </>
-                            ) : (
-                                <>
-                                    ↻
-                                    Refresh
-                                </>
-                            )}
-
-                        </button>
-
-                    </section>
-
-
-                    {/* ERROR */}
-
-                    {error && (
-                        <div className="admin-error">
-                            {error}
-                        </div>
-                    )}
-
-
-                    {/* ================= STAT CARDS ================= */}
-
-                    <section className="admin-stats-grid">
-
-                        <div className="admin-stat-card">
-
-                            <div className="admin-stat-icon blue">
-                                <ClipboardList size={22} />
-                            </div>
-
-                            <div>
-                                <span>Total Issues</span>
-                                <strong>
-                                    {loading ? "—" : totalIssues}
-                                </strong>
-                            </div>
-
+                        <div className="issue-date">
+                          {formatDate(
+                            issue.createdAt ||
+                              issue.created_at
+                          )}
                         </div>
 
-
-                        <div className="admin-stat-card">
-
-                            <div className="admin-stat-icon orange">
-                                <Clock3 size={22} />
-                            </div>
-
-                            <div>
-                                <span>Reported</span>
-                                <strong>
-                                    {loading ? "—" : reportedIssues}
-                                </strong>
-                            </div>
-
-                        </div>
-
-
-                        <div className="admin-stat-card">
-
-                            <div className="admin-stat-icon purple">
-                                <Users size={22} />
-                            </div>
-
-                            <div>
-                                <span>Assigned</span>
-                                <strong>
-                                    {loading ? "—" : assignedIssues}
-                                </strong>
-                            </div>
-
-                        </div>
-
-
-                        <div className="admin-stat-card">
-
-                            <div className="admin-stat-icon green">
-                                <CheckCircle2 size={22} />
-                            </div>
-
-                            <div>
-                                <span>Resolved</span>
-                                <strong>
-                                    {loading ? "—" : resolvedIssues}
-                                </strong>
-                            </div>
-
-                        </div>
-
-                    </section>
-
-
-                    {/* ================= STATUS ================= */}
-
-                    <section className="admin-status-summary">
-
-                        <div className="admin-panel-header">
-
-                            <div>
-                                <h2>Issue Status</h2>
-
-                                <p>
-                                    Current distribution of reported issues.
-                                </p>
-                            </div>
-
-                        </div>
-
-
-                        <div className="status-summary-grid">
-
-                            <div>
-                                <span>Reported</span>
-                                <strong>{reportedIssues}</strong>
-                            </div>
-
-                            <div>
-                                <span>Verified</span>
-                                <strong>{verifiedIssues}</strong>
-                            </div>
-
-                            <div>
-                                <span>Assigned</span>
-                                <strong>{assignedIssues}</strong>
-                            </div>
-
-                            <div>
-                                <span>In Progress</span>
-                                <strong>{inProgressIssues}</strong>
-                            </div>
-
-                            <div>
-                                <span>Resolved</span>
-                                <strong>{resolvedIssues}</strong>
-                            </div>
-
-                        </div>
-
-                    </section>
-
-
-                    {/* ================= LOWER SECTION ================= */}
-
-                    <section className="admin-main-grid">
-
-                        {/* RECENT ISSUES */}
-
-                        <div className="admin-panel">
-
-                            <div className="admin-panel-header">
-
-                                <div>
-                                    <h2>Recent Issues</h2>
-
-                                    <p>
-                                        Latest issues received by ResolveX.
-                                    </p>
-                                </div>
-
-                                <Link
-                                    to="/admin/issues"
-                                    className="panel-link"
-                                >
-                                    View all
-                                    <ArrowUpRight size={15} />
-                                </Link>
-
-                            </div>
-
-
-                            {loading ? (
-
-                                <div className="admin-loading">
-                                    Loading issues...
-                                </div>
-
-                            ) : recentIssues.length === 0 ? (
-
-                                <div className="admin-empty">
-
-                                    <ClipboardList size={28} />
-
-                                    <h3>
-                                        No issues yet
-                                    </h3>
-
-                                    <p>
-                                        New citizen reports will appear here.
-                                    </p>
-
-                                </div>
-
-                            ) : (
-
-                                <div className="admin-recent-list">
-
-                                    {recentIssues.map((issue) => (
-
-                                        <div
-                                            className="admin-recent-item"
-                                            key={issue._id}
-                                        >
-
-                                            <div
-                                                className={`admin-recent-icon ${
-                                                    getStatusClass(
-                                                        issue.status
-                                                    )
-                                                }`}
-                                            >
-
-                                                {issue.status ===
-                                                "RESOLVED" ? (
-                                                    <CheckCircle2 size={17} />
-                                                ) : issue.status ===
-                                                    "IN_PROGRESS" ? (
-                                                    <AlertCircle size={17} />
-                                                ) : (
-                                                    <Clock3 size={17} />
-                                                )}
-
-                                            </div>
-
-
-                                            <div className="admin-recent-info">
-
-                                                <div className="admin-recent-title-row">
-
-                                                    <strong>
-                                                        {issue.title ||
-                                                            "Untitled Issue"}
-                                                    </strong>
-
-                                                    <span
-                                                        className={`admin-status ${
-                                                            getStatusClass(
-                                                                issue.status
-                                                            )
-                                                        }`}
-                                                    >
-                                                        {formatStatus(
-                                                            issue.status
-                                                        )}
-                                                    </span>
-
-                                                </div>
-
-
-                                                <div className="admin-issue-meta">
-
-                                                    <span>
-                                                        {issue.category ||
-                                                            "Unclassified"}
-                                                    </span>
-
-                                                    <span>
-                                                        <MapPin size={12} />
-
-                                                        {issue.location
-                                                            ?.coordinates
-                                                            ? `${issue.location.coordinates[1].toFixed(
-                                                                4
-                                                            )}, ${issue.location.coordinates[0].toFixed(
-                                                                4
-                                                            )}`
-                                                            : "No location"}
-                                                    </span>
-
-                                                </div>
-
-                                            </div>
-
-
-                                            <Link
-                                                to="/admin/issues"
-                                                className="admin-issue-arrow"
-                                            >
-                                                <ArrowUpRight size={17} />
-                                            </Link>
-
-                                        </div>
-
-                                    ))}
-
-                                </div>
-
-                            )}
-
-                        </div>
-
-
-                        {/* ================= SIDE ================= */}
-
-                        <aside className="admin-side">
-
-                            <div className="admin-quick-panel">
-
-                                <div className="admin-panel-header">
-
-                                    <div>
-                                        <h2>Quick Actions</h2>
-
-                                        <p>
-                                            Frequently used tools.
-                                        </p>
-                                    </div>
-
-                                </div>
-
-
-                                <Link to="/admin/issues">
-
-                                    <div className="quick-action-icon blue">
-                                        <ClipboardList size={18} />
-                                    </div>
-
-                                    <div>
-                                        <strong>
-                                            Manage Issues
-                                        </strong>
-
-                                        <span>
-                                            Assign and track issues
-                                        </span>
-                                    </div>
-
-                                    <ArrowUpRight size={15} />
-
-                                </Link>
-
-
-                                <Link to="/admin/officers">
-
-                                    <div className="quick-action-icon green">
-                                        <Users size={18} />
-                                    </div>
-
-                                    <div>
-                                        <strong>
-                                            Manage Officers
-                                        </strong>
-
-                                        <span>
-                                            View officer management
-                                        </span>
-                                    </div>
-
-                                    <ArrowUpRight size={15} />
-
-                                </Link>
-
-
-                                <Link to="/admin/citizens">
-
-                                    <div className="quick-action-icon purple">
-                                        <UserCog size={18} />
-                                    </div>
-
-                                    <div>
-                                        <strong>
-                                            Manage Citizens
-                                        </strong>
-
-                                        <span>
-                                            View citizen information
-                                        </span>
-                                    </div>
-
-                                    <ArrowUpRight size={15} />
-
-                                </Link>
-
-                            </div>
-
-
-                            {/* UNASSIGNED */}
-
-                            <div className="unassigned-panel">
-
-                                <div className="unassigned-icon">
-                                    <AlertCircle size={20} />
-                                </div>
-
-                                <div>
-
-                                    <span>
-                                        Issues awaiting assignment
-                                    </span>
-
-                                    <strong>
-                                        {loading
-                                            ? "—"
-                                            : unassignedIssues}
-                                    </strong>
-
-                                </div>
-
-                                <Link to="/admin/issues">
-                                    <ArrowUpRight size={16} />
-                                </Link>
-
-                            </div>
-
-                        </aside>
-
-                    </section>
-
-                </main>
+                      </div>
+
+                    </div>
+                  ))}
+
+                </div>
+              )}
+
+            </section>
+
+          </section>
+
+          {/* QUICK ACTIONS */}
+
+          <section className="dashboard-card">
+
+            <div className="section-heading">
+              <div>
+                <h2>Quick Actions</h2>
+
+                <p>
+                  Quickly access admin management pages.
+                </p>
+              </div>
+            </div>
+
+            <div className="quick-actions">
+
+              <Link
+                to="/admin/issues"
+                className="action-card"
+              >
+                <div className="action-icon">
+                  <ClipboardList size={22} />
+                </div>
+
+                <div className="action-text">
+                  <div className="action-title">
+                    Manage Issues
+                  </div>
+
+                  <div className="action-description">
+                    View and manage civic issues
+                  </div>
+                </div>
+
+                <ArrowUpRight
+                  size={18}
+                  className="action-arrow"
+                />
+              </Link>
+
+              <Link
+                to="/admin/officers"
+                className="action-card"
+              >
+                <div className="action-icon">
+                  <UserCog size={22} />
+                </div>
+
+                <div className="action-text">
+                  <div className="action-title">
+                    Manage Officers
+                  </div>
+
+                  <div className="action-description">
+                    Assign and manage officers
+                  </div>
+                </div>
+
+                <ArrowUpRight
+                  size={18}
+                  className="action-arrow"
+                />
+              </Link>
+
+              <Link
+                to="/admin/citizens"
+                className="action-card"
+              >
+                <div className="action-icon">
+                  <Users size={22} />
+                </div>
+
+                <div className="action-text">
+                  <div className="action-title">
+                    View Citizens
+                  </div>
+
+                  <div className="action-description">
+                    View registered citizens
+                  </div>
+                </div>
+
+                <ArrowUpRight
+                  size={18}
+                  className="action-arrow"
+                />
+              </Link>
 
             </div>
-        </>
-    );
+
+          </section>
+
+          {/* ISSUES AWAITING ASSIGNMENT */}
+
+          <section className="dashboard-card assignment-panel">
+
+            <div className="section-heading">
+
+              <div>
+                <h2>
+                  Issues Awaiting Assignment
+                </h2>
+
+                <p>
+                  Issues that currently don't have an officer.
+                </p>
+              </div>
+
+              <Link
+                to="/admin/issues"
+                className="view-all"
+              >
+                Manage
+                <ArrowUpRight size={15} />
+              </Link>
+
+            </div>
+
+            <div className="assignment-summary">
+
+              <div className="assignment-left">
+
+                <div className="assignment-icon">
+                  <UserPlus size={23} />
+                </div>
+
+                <div>
+
+                  <div className="assignment-number">
+                    {loading
+                      ? "—"
+                      : awaitingAssignment}
+                  </div>
+
+                  <div className="assignment-label">
+                    {awaitingAssignment === 1
+                      ? "issue needs officer assignment"
+                      : "issues need officer assignment"}
+                  </div>
+
+                </div>
+
+              </div>
+
+              {awaitingAssignment > 0 && (
+                <Link
+                  to="/admin/issues"
+                  className="assign-link"
+                >
+                  Assign Officers
+                </Link>
+              )}
+
+            </div>
+
+          </section>
+
+        </div>
+      </main>
+    </>
+  );
 }
 
 export default AdminDashboard;
+
