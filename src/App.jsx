@@ -1,8 +1,10 @@
+
+
 import {
-BrowserRouter,
-Routes,
-Route,
-Navigate,
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
 } from "react-router-dom";
 
 import Register from "./pages/Register";
@@ -17,82 +19,129 @@ import AdminIssues from "./pages/AdminIssues";
 import OfficerDashboard from "./pages/OfficerDashboard";
 import Officers from "./pages/Officers";
 import ReportIssue from "./pages/ReportIssue";
-import MyIssues from "./pages/MyIssues";
+
 function App() {
-return ( <BrowserRouter> <Navbar />
+  return (
+    <BrowserRouter>
 
-```
-  <Routes>
+      <Navbar />
 
-    {/* Public Routes */}
-    <Route
-      path="/"
-      element={<Navigate to="/register" replace />}
-    />
+      <Routes>
 
-    {/* Authentication */}
-    <Route
-      path="/register"
-      element={<Register />}
-    />
+        {/* PUBLIC ROUTES */}
 
-    <Route
-      path="/login"
-      element={<Login />}
-    />
+        <Route
+          path="/register"
+          element={<Register />}
+        />
 
-    {/* Protected Routes */}
-    <Route element={<ProtectedRoute />}>
-
-      {/* Citizen Routes */}
-      <Route
-        path="/dashboard"
-        element={<Dashboard />}
-      />
-
-      <Route
-        path="/report"
-        element={<ReportIssue />}
-      />
-
-      <Route
-        path="/report-issue"
-        element={<ReportIssue />}
-      />
-
-      {/* Admin Routes */}
-      <Route
-        path="/admin"
-        element={<AdminDashboard />}
-      />
-
-      <Route
-        path="/admin/issues"
-        element={<AdminIssues />}
-      />
-
-      <Route
-        path="/admin/officers"
-        element={<Officers />}
-      />
-
-      {/* Officer Routes */}
-      <Route
-        path="/officer"
-        element={<OfficerDashboard />}
-      />
-     <Route
-       path="/my-issues"
-       element={<MyIssues />}
-    />
-
-    </Route>
-
-  </Routes>
-</BrowserRouter>
+        <Route
+          path="/login"
+          element={<Login />}
+        />
 
 
-);
+        {/* CITIZEN DASHBOARD */}
+
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+
+        {/* REPORT ISSUE */}
+
+        <Route
+          path="/report-issue"
+          element={
+            <ProtectedRoute>
+              <ReportIssue />
+            </ProtectedRoute>
+          }
+        />
+
+
+        {/* ADMIN DASHBOARD */}
+
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+
+        {/* ADMIN ISSUES */}
+
+        <Route
+          path="/admin/issues"
+          element={
+            <ProtectedRoute>
+              <AdminIssues />
+            </ProtectedRoute>
+          }
+        />
+
+
+        {/* ADMIN OFFICERS */}
+
+        <Route
+          path="/admin/officers"
+          element={
+            <ProtectedRoute>
+              <Officers />
+            </ProtectedRoute>
+          }
+        />
+
+
+        {/* OFFICER DASHBOARD */}
+
+        <Route
+          path="/officer"
+          element={
+            <ProtectedRoute>
+              <OfficerDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+
+        {/* DEFAULT */}
+
+        <Route
+          path="/"
+          element={
+            <Navigate
+              to="/login"
+              replace
+            />
+          }
+        />
+
+
+        {/* UNKNOWN ROUTES */}
+
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to="/login"
+              replace
+            />
+          }
+        />
+
+      </Routes>
+
+    </BrowserRouter>
+  );
 }
 
 export default App;
