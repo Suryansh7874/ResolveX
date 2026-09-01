@@ -12,10 +12,10 @@ const createIssue = async(req,res) => {
             //  category, 
             //  departmentId, 
              location, 
-             media
+            //  media
         } = req.body;
 
-        const { latitude, longitude } = location;
+        const { latitude, longitude } = JSON.parse(location);
 
 
 
@@ -23,6 +23,71 @@ const createIssue = async(req,res) => {
             title,
             description,
         );
+        ////
+
+
+//Validating image file
+        if (!req.files || !req.files.image) {
+                return res.status(400).json({
+                    message: "Issue image is required"
+                });
+            }
+
+        const media = [];
+
+// Add image
+            if (req.files.image) {
+                media.push({
+                    type: "image",
+                    url: `/uploads/${req.files.image[0].filename}`
+                });
+            }
+
+// Add video if provided
+            if (req.files.video) {
+                media.push({
+                    type: "video",
+                    url: `/uploads/${req.files.video[0].filename}`
+                });
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        ///
 
 
         const issue = await Issue.create({

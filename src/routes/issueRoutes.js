@@ -3,6 +3,8 @@ const express = require("express");
 const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 
+const upload = require("../middleware/imageUpload");
+
 
 
 
@@ -17,7 +19,13 @@ const {
 
 const router = express.Router();
 
-router.post("/", authMiddleware, createIssue);
+router.post("/", authMiddleware,
+    upload.fields([
+        {name: "image", maxCount:1},
+        {name: "video", maxCount:1}
+    ]),
+    
+    createIssue);
 
 router.get("/", getIssues);
 

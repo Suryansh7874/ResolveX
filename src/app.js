@@ -32,6 +32,7 @@ app.use("/api/voice", voiceRoute);
 app.use("/api/officer",officerRoute);
 
 app.use("/api/officer",getOfficerIssueDetails);
+app.use("/uploads",express.static("uploads"));
 
 
 app.get("/api/health", (req, res) => {
