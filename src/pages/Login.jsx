@@ -39,8 +39,20 @@ function Login() {
     try {
       const data = await loginUser(formData);
 
-      const role = data.user.role;
 
+// Store login data
+localStorage.setItem(
+  "token",
+  data.token
+);
+
+localStorage.setItem(
+  "user",
+  JSON.stringify(data.user)
+);
+
+
+const role = data.user.role;
       if (role === "CITIZEN") {
         navigate("/dashboard");
       } else if (role === "OFFICER") {

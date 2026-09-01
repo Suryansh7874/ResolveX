@@ -17,7 +17,7 @@ import AdminIssues from "./pages/AdminIssues";
 import OfficerDashboard from "./pages/OfficerDashboard";
 import Officers from "./pages/Officers";
 import ReportIssue from "./pages/ReportIssue";
-
+import MyIssues from "./pages/MyIssues";
 function App() {
 return ( <BrowserRouter> <Navbar />
 
@@ -81,6 +81,10 @@ return ( <BrowserRouter> <Navbar />
         path="/officer"
         element={<OfficerDashboard />}
       />
+     <Route
+       path="/my-issues"
+       element={<MyIssues />}
+    />
 
     </Route>
 
