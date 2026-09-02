@@ -100,6 +100,37 @@ const getIssues = async(req,res) => {
 };
 
 
+// Get issues by department controller
+const getDepartmentIssues = async (req, res) => {
+    try {
+
+        const { department, category } = req.query;
+
+        const filter = {};
+
+        if (department) {
+            filter.department = department;
+        }
+
+        if (category) {
+            filter.category = category;
+        }
+
+        const issues = await Issue.find(filter);
+
+        res.status(200).json({
+            count: issues.length,
+            issues
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            message: `Failed to fetch issues of ${department} department`,
+            error: error.message
+        });
+    }
+};
 
 
 //  check duplicates issues
@@ -273,6 +304,35 @@ const updateIssueStatus = async(req,res) => {
     }
 };
 
+//User deleting his own issue controller
+const deleteMyIssue = async (req, res) => {
+
+    try {
+        const { id } = req.params;
+        const { userId } = req.body;
+        const issue = await Issue.findOneAndDelete({
+            _id: id,
+            userId: userId
+        });
+
+        if (!issue) {
+            return res.status(404).json({
+                message: "Issue not found or you are not authorized"
+            });
+        }
+
+        res.status(200).json({
+            message: "Hurray!! Issue deleted successfully"
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            message: "Failed to delete issue",
+            error: error.message
+        });
+    }
+};
 
 
 // Assign issue controller
@@ -396,9 +456,11 @@ const getIssueById = async (req, res) => {
 module.exports = {
     createIssue,
     getIssues,
+    getDepartmentIssues,
     checkDuplicateIssue,
     upvoteIssue,
     updateIssueStatus,
+    deleteMyIssue,
     assignIssue,
     getMyIssues,
     getIssueById

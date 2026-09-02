@@ -9,6 +9,8 @@ const userRoutes = require("./src/routes/userRoutes");
 const aiRoutes = require("./src/routes/aiRoutes");
 const voiceRoute = require("./src/routes/voiceRoute");
 
+const notificationRoutes = require("./src/routes/notificationRoutes");
+
 
 const app = express();
 
@@ -24,6 +26,8 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/voice", voiceRoute);
 app.use("/uploads", express.static("uploads"));
+
+app.use("/api/notifications", notificationRoutes);
 
 
 app.get("/api/health", (req, res) => {
