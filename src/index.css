@@ -799,7 +799,7 @@ body {
 
   padding: 0 6%;
 
-  background: #ffffff;
+  background-image:url(${monsoonBG});
 
   border-bottom: 1px solid #e7eef1;
 
@@ -835,7 +835,8 @@ body {
   background: linear-gradient(
     135deg,
     #10acd9,
-    #0c8fc0
+    #0c8fc0,
+    url(${monsoonBG})
   );
 
   color: white;
