@@ -109,52 +109,56 @@ const issueSchema = new mongoose.Schema(
                 ref:"User",
             },
         ],
-        verification: {
-            aiGenerated: {
-                type: String,
-                enum: [
-                    "LIKELY_AI",
-                    "LIKELY_AUTHENTIC",
-                    "UNCERTAIN"
-                ],
-                default: "UNCERTAIN"
-            },
 
-            aiConfidence: {
-                type: Number,
-                min: 0,
-                max: 1
-            },
+        // verification: {
+        //     aiGenerated: {
+        //         type: String,
+        //         enum: [
+        //             "LIKELY_AI",
+        //             "LIKELY_AUTHENTIC",
+        //             "UNCERTAIN"
+        //         ],
+        //         default: "UNCERTAIN"
+        //     },
 
-            detectedObject: {
-                type: String
-            },
+        //     aiConfidence: {
+        //         type: Number,
+        //         min: 0,
+        //         max: 1
+        //     },
 
-            objectConfidence: {
-                type: Number,
-                min: 0,
-                max: 1
-            },
+        //     detectedObject: {
+        //         type: String
+        //     },
 
-            imageCategory: {
-                type: String
-            },
+        //     objectConfidence: {
+        //         type: Number,
+        //         min: 0,
+        //         max: 1
+        //     },
 
-            categoryMatch: {
-                type: Boolean
-            },
+        //     imageCategory: {
+        //         type: String
+        //     },
 
-            verificationStatus: {
-                type: String,
-                enum: [
-                    "VERIFIED",
-                    "REVIEW_REQUIRED",
-                    "UNCERTAIN"
-                ],
-                default: "UNCERTAIN"
-            }
-        }
+        //     categoryMatch: {
+        //         type: Boolean
+        //     },
 
+        //     verificationStatus: {
+        //         type: String,
+        //         enum: [
+        //             "VERIFIED",
+        //             "REVIEW_REQUIRED",
+        //             "UNCERTAIN"
+        //         ],
+        //         default: "UNCERTAIN"
+        //     }
+        // }
+        deadline: {
+            type: Date,
+            default: null,
+        },
 
     },
 

@@ -5,7 +5,7 @@ const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY,
 });
 
-
+// Test AI functionality
 const testAI = async (req, res) => {
     try {
         const response = await ai.models.generateContent({
@@ -28,7 +28,7 @@ const testAI = async (req, res) => {
     }
 };
 
-
+// Function to classify issue using AI
 const classifyIssueWithAI = async (title, description) => {
     if(!title || !description){
         throw new Error("Title or Description not found");
@@ -117,50 +117,35 @@ const classifyIssueWithAI = async (title, description) => {
             });
 
 
-if (!department) {
-    throw new Error("AI returned an invalid department code");
-}
+        if (!department) {
+            throw new Error("AI returned an invalid department code");
+        }
 
-if (!allowedCategories.includes(classification.category)) {
-    throw new Error("AI returned an invalid category");
-}     
-
-
-            const allowedPriorities = [
-                "LOW",
-                "MEDIUM",
-                "HIGH",
-                "CRITICAL",
-            ];
-
-if (!allowedPriorities.includes(classification.priority)) {
-    throw new Error("AI returned an invalid priority");
-}
-return {
-    category: classification.category,
-    priority: classification.priority,
-    departmentCode: classification.departmentCode,
-    departmentId: department._id,
-};
+        if (!allowedCategories.includes(classification.category)) {
+            throw new Error("AI returned an invalid category");
+        }     
 
 
+                    const allowedPriorities = [
+                        "LOW",
+                        "MEDIUM",
+                        "HIGH",
+                        "CRITICAL",
+                    ];
 
+        if (!allowedPriorities.includes(classification.priority)) {
+            throw new Error("AI returned an invalid priority");
+        }
+        return {
+            category: classification.category,
+            priority: classification.priority,
+            departmentCode: classification.departmentCode,
+            departmentId: department._id,
+        };
 
-
-
-
-
-
-
-
-
-
-};
-
-
+    };
 
 // classify issue using AI
-
 const classifyIssue = async (req, res) => {
     try {
         const { title, description } = req.body;
@@ -194,5 +179,5 @@ const classifyIssue = async (req, res) => {
 module.exports = {
     testAI,
     classifyIssue,
-     classifyIssueWithAI,
+    classifyIssueWithAI,
 };

@@ -3,12 +3,15 @@ const User = require("../models/User");
 
 const { classifyIssueWithAI } = require("./aiControllers");
 
+const { calculatePriority } = require("../utils/priorityEngine");
+const { calculateDeadline } = require("../utils/slaManager");
+
 
 // Import the mlService functions
-const {
-    detectObjects,
-    detectAIImage
-} = require("../services/mlService");
+// const {
+//     detectObjects,
+//     detectAIImage
+// } = require("../services/mlService");
 
 
 
@@ -22,7 +25,19 @@ const createIssue = async(req,res) => {
         } = req.body;
 
         const { latitude, longitude } = JSON.parse(location);
-
+        if (
+            typeof latitude !== "number" ||
+            typeof longitude !== "number" ||
+            latitude < -90 ||
+            latitude > 90 ||
+            longitude < -180 ||
+            longitude > 180
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid location coordinates"
+            });
+        }
 
 
         const classification = await classifyIssueWithAI(
@@ -30,35 +45,41 @@ const createIssue = async(req,res) => {
             description,
         );
 
-        const imagePath = req.files.image[0].path;
-        const aiResult = await detectAIImage(imagePath);
-        const objectResult = await detectObjects(imagePath);
+        const initialPriority = classification.priority;
         
-        const verification =
-            verifyCategory(
-                classification.category,
-                objectResult.detections
-            );
+        const deadline = calculateDeadline(initialPriority);
+
+        
+
+        
+        // const aiResult = await detectAIImage(imagePath);
+        // const objectResult = await detectObjects(imagePath);
+        
+        // const verification =
+        //     verifyCategory(
+        //         classification.category,
+        //         objectResult.detections
+        //     );
 
             
-        // If the verification fails, delete the uploaded files and return an error response
-        if (!verification.verified) {
+// If the verification fails, delete the uploaded files and return an error response
+    //     if (!verification.verified) {
 
-        fs.unlinkSync(imagePath);
+    //     fs.unlinkSync(imagePath);
 
-        if (req.files.video) {
-            fs.unlinkSync(req.files.video[0].path);
-        }
+    //     if (req.files.video) {
+    //         fs.unlinkSync(req.files.video[0].path);
+    //     }
 
-        return res.status(400).json({
-            success: false,
-            code: "VISUAL_VERIFICATION_FAILED",
-            message:
-                "The reported issue could not be clearly verified from the uploaded image.",
-            suggestion:
-                "Please upload a clearer image focusing on the reported problem."
-        });
-    }
+    //     return res.status(400).json({
+    //         success: false,
+    //         code: "VISUAL_VERIFICATION_FAILED",
+    //         message:
+    //             "The reported issue could not be clearly verified from the uploaded image.",
+    //         suggestion:
+    //             "Please upload a clearer image focusing on the reported problem."
+    //     });
+    // }
 
 //Validating image file
         if (!req.files || !req.files.image) {
@@ -66,7 +87,8 @@ const createIssue = async(req,res) => {
                     message: "Issue image is required"
                 });
             }
-
+        const imagePath = req.files.image[0].path;
+        
         const media = [];
 
 
@@ -99,7 +121,8 @@ const createIssue = async(req,res) => {
             },
             media,
             category: classification.category,
-            priority: classification.priority,
+            priority: initialPriority,
+            deadline: deadline,
             departmentId: classification.departmentId,           
                     
         });
@@ -151,7 +174,7 @@ const getDepartmentIssues = async (req, res) => {
         const filter = {};
 
         if (department) {
-            filter.department = department;
+            filter.departmentId = department;
         }
 
         if (category) {
@@ -235,8 +258,16 @@ const upvoteIssue = async (req,res) => {
                 message: "Issue not found",
             });
         }
+        if (issue.status === "RESOLVED") {
+            return res.status(400).json({
+                success: false,
+                message: "Resolved issues cannot be upvoted",
+            });
+        }
 
-        const alreadyUpvoted = issue.upvotedBy.includes(userId);
+        const alreadyUpvoted = issue.upvotedBy.some(
+            id => id.toString() === userId.toString()
+        );
 
         if (alreadyUpvoted) {
             return res.status(400).json({
@@ -247,6 +278,30 @@ const upvoteIssue = async (req,res) => {
 
         issue.upvotedBy.push(userId);
 
+        
+
+        const issueAgeInDays =
+            (Date.now() - issue.createdAt.getTime()) /
+            (1000 * 60 * 60 * 24);
+    
+        let deadlineRemainingInDays = Infinity;
+
+        if (issue.deadline) {
+            deadlineRemainingInDays =
+                (issue.deadline.getTime() - Date.now()) /
+                (1000 * 60 * 60 * 24);
+        }
+        // Recalculate priority
+        const priorityResult = calculatePriority({
+            currentPriority: issue.priority,
+            upvoteCount: issue.upvotedBy.length,
+            issueAgeInDays,
+            deadlineRemainingInDays,
+        });
+
+        // Update final priority
+        issue.priority = priorityResult;
+
         await issue.save();
 
 
@@ -254,6 +309,8 @@ const upvoteIssue = async (req,res) => {
             success:true,
             message:"Issue upvoted successfully",
             upvotes: issue.upvotedBy.length,
+            priority: issue.priority,
+            deadline: issue.deadline,
             issue,
         });
 
@@ -351,10 +408,10 @@ const deleteMyIssue = async (req, res) => {
 
     try {
         const { id } = req.params;
-        const { userId } = req.body;
+        const { reportedBy } = req.body;
         const issue = await Issue.findOneAndDelete({
             _id: id,
-            userId: userId
+            reportedBy: reportedBy
         });
 
         if (!issue) {
@@ -410,19 +467,19 @@ const assignIssue = async(req,res) => {
             });
         }
 
-if (!issue.departmentId || !officer.departmentId) {
-    return res.status(400).json({
-        success: false,
-        message: "Issue or officer department is missing",
-    });
-}
+        if (!issue.departmentId || !officer.departmentId) {
+            return res.status(400).json({
+                success: false,
+                message: "Issue or officer department is missing",
+            });
+        }
 
-if (!issue.departmentId.equals(officer.departmentId)) {
-    return res.status(403).json({
-        success: false,
-        message: "Officer does not belong to this department",
-    });
-}
+        if (!issue.departmentId.equals(officer.departmentId)) {
+            return res.status(403).json({
+                success: false,
+                message: "Officer does not belong to this department",
+            });
+        }
 
         issue.assignedTo=officer._id;
 

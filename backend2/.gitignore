@@ -1,16 +1,18 @@
 node_modules/
 .env
 uploads/
+
 # ML datasets
-ml-service/*/dataset/
+ml-service/object_detection/dataset/
+ml-service/object_detection/raw_datasets/
 
 # Trained model weights
 *.pt
 *.onnx
 
 # Training outputs
-ml-service/*/runs/
-ml-service/*/weights/
+ml-service/object_detection/runs/
+ml-service/object_detection/weights/
 
 # Python cache
 __pycache__/
