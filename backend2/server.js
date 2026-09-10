@@ -1,0 +1,20 @@
+require("dotenv").config();
+
+const app = require("./app");
+const connectDB = require("./src/config/db");
+
+
+
+const PORT = process.env.PORT || 5000;
+// Import the SLA escalation job to ensure it runs when the server starts
+require("./src/jobs/slaEscalationJob");
+
+const startServer = async () => {
+  await connectDB();
+
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+};
+
+startServer();
