@@ -29,11 +29,11 @@ const register = async (req, res) => {
       message: "User registered successfully",
       user: {
         id: user._id,
-        name: user.name,
+        name: user.name,  //can add age,address,gender etc if needed in future
         email: user.email,
         phone: user.phone,
         role: user.role,
-      },
+      },// also can add google sign in and digilocker verfication in future
     });
   } catch (error) {
     res.status(400).json({

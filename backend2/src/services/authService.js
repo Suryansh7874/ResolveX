@@ -58,11 +58,10 @@ const loginUser = async ({ email, password }) => {
   };
 };
 
+// forgot password function
 const forgotPassword = async (email) => {
 
   const user = await User.findOne({ email });
-
-  
 
   if (!user) {
     return;

@@ -4,6 +4,15 @@ const User = require("../models/User");
 const { classifyIssueWithAI } = require("./aiControllers");
 
 
+// Import the mlService functions
+const {
+    detectObjects,
+    detectAIImage
+} = require("../services/mlService");
+
+
+
+// Create issue controller
 const createIssue = async(req,res) => {
     try{
         const {
@@ -12,7 +21,7 @@ const createIssue = async(req,res) => {
              location
         } = req.body;
 
-const { latitude, longitude } = JSON.parse(location);
+        const { latitude, longitude } = JSON.parse(location);
 
 
 
@@ -20,6 +29,37 @@ const { latitude, longitude } = JSON.parse(location);
             title,
             description,
         );
+
+        const imagePath = req.files.image[0].path;
+        const aiResult = await detectAIImage(imagePath);
+        const objectResult = await detectObjects(imagePath);
+        
+        const verification =
+            verifyCategory(
+                classification.category,
+                objectResult.detections
+            );
+
+            
+        // If the verification fails, delete the uploaded files and return an error response
+        if (!verification.verified) {
+
+        fs.unlinkSync(imagePath);
+
+        if (req.files.video) {
+            fs.unlinkSync(req.files.video[0].path);
+        }
+
+        return res.status(400).json({
+            success: false,
+            code: "VISUAL_VERIFICATION_FAILED",
+            message:
+                "The reported issue could not be clearly verified from the uploaded image.",
+            suggestion:
+                "Please upload a clearer image focusing on the reported problem."
+        });
+    }
+
 //Validating image file
         if (!req.files || !req.files.image) {
                 return res.status(400).json({
@@ -29,6 +69,7 @@ const { latitude, longitude } = JSON.parse(location);
 
         const media = [];
 
+
 // Add image
             if (req.files.image) {
                 media.push({
@@ -36,6 +77,7 @@ const { latitude, longitude } = JSON.parse(location);
                     url: `/uploads/${req.files.image[0].filename}`
                 });
             }
+
 
 // Add video if provided
             if (req.files.video) {
@@ -336,8 +378,6 @@ const deleteMyIssue = async (req, res) => {
 
 
 // Assign issue controller
-
-
 const assignIssue = async(req,res) => {
     try{
         const { issueId } = req.params;

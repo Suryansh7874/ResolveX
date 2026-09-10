@@ -31,8 +31,6 @@ const createDepartment = async (req,res) => {
 
 
 
-
-
 const getDepartments = async (req,res) => {
     try{
         

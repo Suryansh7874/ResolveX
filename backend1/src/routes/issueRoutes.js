@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router(); //making route
-const upload = require("../middleware/upload"); //to store the image received
+const upload = require("../middleware/upload"); //to upload the image & video received
 
 const {
     createIssue,

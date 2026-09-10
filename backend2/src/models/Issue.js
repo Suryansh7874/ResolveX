@@ -53,19 +53,19 @@ const issueSchema = new mongoose.Schema(
             },
         },
 
-         media: [
-    {
-        type: {
-            type: String,
-            enum: ["image", "video"],
-            required: true
-        },
-        url: {
-            type: String,
-            required: true
-        }
-    }
-],
+        media: [
+            {
+            type: {
+                type: String,
+                enum: ["image", "video"],
+                required: true
+            },
+            url: {
+                type: String,
+                required: true
+                }
+            }
+        ],
 
 
         status:{
@@ -109,11 +109,55 @@ const issueSchema = new mongoose.Schema(
                 ref:"User",
             },
         ],
-        
+        verification: {
+            aiGenerated: {
+                type: String,
+                enum: [
+                    "LIKELY_AI",
+                    "LIKELY_AUTHENTIC",
+                    "UNCERTAIN"
+                ],
+                default: "UNCERTAIN"
+            },
 
+            aiConfidence: {
+                type: Number,
+                min: 0,
+                max: 1
+            },
+
+            detectedObject: {
+                type: String
+            },
+
+            objectConfidence: {
+                type: Number,
+                min: 0,
+                max: 1
+            },
+
+            imageCategory: {
+                type: String
+            },
+
+            categoryMatch: {
+                type: Boolean
+            },
+
+            verificationStatus: {
+                type: String,
+                enum: [
+                    "VERIFIED",
+                    "REVIEW_REQUIRED",
+                    "UNCERTAIN"
+                ],
+                default: "UNCERTAIN"
+            }
+        }
 
 
     },
+
 
     {
         timestamps:true,

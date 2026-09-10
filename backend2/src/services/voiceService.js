@@ -123,19 +123,6 @@ const transcribeAudio = async (audio) => {
         
         return result;
         
-
-
-
-
-
-
-
-
-
-
-
- 
-
     } catch (error) {
         throw error;
     }
