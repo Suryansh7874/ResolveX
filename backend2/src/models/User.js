@@ -29,10 +29,16 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["CITIZEN", "OFFICER", "ADMIN"],
+      enum: ["CITIZEN", "GOVERNMENT", "HEI_ADMIN", "FACULTY", "STUDENT", "INDUSTRY", "ADMIN"],
       default: "CITIZEN",
     },
 
+    heiId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "HEI",
+      default: null,
+    },
+    
     departmentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Department",

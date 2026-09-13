@@ -7,7 +7,7 @@ const connectDB = require("./src/config/db");
 
 const PORT = process.env.PORT || 5000;
 // Import the SLA escalation job to ensure it runs when the server starts
-require("./src/jobs/slaEscalationJob");
+// require("./src/jobs/slaEscalationJob");
 
 const startServer = async () => {
   await connectDB();

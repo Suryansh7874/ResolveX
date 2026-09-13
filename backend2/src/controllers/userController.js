@@ -1,95 +1,198 @@
 const User = require("../models/User");
-
 const Department = require("../models/Department");
-
-const promoteToOfficer = async (req,res) => {
-
-
-    try{
-    const {userId , departmentId} = req.body;
-
-    if(!userId || !departmentId){
-        return res.status(400).json({
-            success:false,
-            message:"userId and departmentId are required ",
-        });
-    }
-
-    // user exist or not
-    const userExist = await User.findById(userId);
-
-    if(!userExist){
-        return res.status(404).json({
-            success:false,
-            message:"User does not exist",
-        });
-    }
+const HEI = require("../models/HEI");
 
 
-    if(userExist.role !== "CITIZEN"){
-        return res.status(400).json({
-            success:false,
-            message:"You are already an Officer or an Admin"
-        });
-    }
+// =====================================================
+// ADMIN CREATES MANAGED USER
+// =====================================================
 
-    // department exist or not
-    const departmentExist = await Department.findById(departmentId);
+const createManagedUser = async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      phone,
+      password,
+      role,
+      departmentId,
+      heiId,
+    } = req.body;
 
-    if(!departmentExist){
-        return res.status(404).json({
-            success:false,
-            message:"Department does not exist",
-        });
+
+    // -------------------------------------------------
+    // BASIC VALIDATION
+    // -------------------------------------------------
+
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, email, password and role are required",
+      });
     }
 
 
-    // department is active or not 
+    // -------------------------------------------------
+    // ALLOWED ROLES
+    // -------------------------------------------------
 
-    if(!departmentExist.isActive){
-        return res.status(400).json({
-            success:false,
-            message:"This department is inactive. Sorry for inconvinience",
-        });
+    const allowedRoles = [
+      "GOVERNMENT",
+      "HEI_ADMIN",
+      "FACULTY",
+      "STUDENT",
+      "INDUSTRY",
+    ];
+
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid role. Admin can create GOVERNMENT, HEI_ADMIN, FACULTY, STUDENT or INDUSTRY accounts",
+      });
     }
 
-    // after all promote the user
 
-    userExist.role = "OFFICER";
-    userExist.departmentId = departmentExist._id;
+    // -------------------------------------------------
+    // CHECK DUPLICATE EMAIL
+    // -------------------------------------------------
 
-    await userExist.save();
-
-
-
-
-    return res.status(200).json({
-        success: true,
-        message: "User promoted to officer successfully",
-        user: {
-            id: userExist._id,
-            name: userExist.name,
-            email: userExist.email,
-            phone: userExist.phone,
-            role: userExist.role,
-            departmentId: userExist.departmentId,
-        },
+    const existingUser = await User.findOne({
+      email: email.toLowerCase(),
     });
-}
 
-    catch(error){
-        return res.status(500).json({
-            success: false,
-            message: error.message,
-        });       
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "User with this email already exists",
+      });
     }
 
 
+    // -------------------------------------------------
+    // GOVERNMENT
+    // -------------------------------------------------
+
+    if (role === "GOVERNMENT") {
+
+      if (!departmentId) {
+        return res.status(400).json({
+          success: false,
+          message: "departmentId is required for GOVERNMENT account",
+        });
+      }
+
+      const departmentExist =
+        await Department.findById(departmentId);
+
+      if (!departmentExist) {
+        return res.status(404).json({
+          success: false,
+          message: "Department does not exist",
+        });
+      }
+
+      if (!departmentExist.isActive) {
+        return res.status(400).json({
+          success: false,
+          message: "This department is inactive",
+        });
+      }
+    }
 
 
-}
+    // -------------------------------------------------
+    // HEI ADMIN / FACULTY / STUDENT
+    // -------------------------------------------------
+
+    if (
+      role === "HEI_ADMIN" ||
+      role === "FACULTY" ||
+      role === "STUDENT"
+    ) {
+
+      if (!heiId) {
+        return res.status(400).json({
+          success: false,
+          message: "heiId is required for this role",
+        });
+      }
+
+      const heiExist = await HEI.findById(heiId);
+
+      if (!heiExist) {
+        return res.status(404).json({
+          success: false,
+          message: "HEI does not exist",
+        });
+      }
+
+      if (!heiExist.isActive) {
+        return res.status(400).json({
+          success: false,
+          message: "This HEI is inactive",
+        });
+      }
+    }
+
+
+    // -------------------------------------------------
+    // CREATE USER ACCOUNT
+    // -------------------------------------------------
+
+    const user = await User.create({
+      name,
+      email: email.toLowerCase(),
+      phone,
+      password,
+      role,
+
+      departmentId:
+        role === "GOVERNMENT"
+          ? departmentId
+          : null,
+
+      heiId:
+        role === "HEI_ADMIN" ||
+        role === "FACULTY" ||
+        role === "STUDENT"
+          ? heiId
+          : null,
+    });
+
+
+    // -------------------------------------------------
+    // RESPONSE
+    // -------------------------------------------------
+
+    return res.status(201).json({
+      success: true,
+      message: `${role} account created successfully`,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        departmentId: user.departmentId,
+        heiId: user.heiId,
+      },
+    });
+
+  } catch (error) {
+
+    console.error("Create managed user error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create managed user",
+      error: error.message,
+    });
+  }
+};
+
 
 
 module.exports = {
-    promoteToOfficer,
+  createManagedUser,
 };

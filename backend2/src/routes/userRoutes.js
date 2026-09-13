@@ -1,11 +1,27 @@
 const express = require("express");
+
 const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 
-const {promoteToOfficer} = require("../controllers/userController");
+const {
+  createManagedUser,
+} = require("../controllers/userController");
 
 const router = express.Router();
 
-router.patch("/promote-officer", authMiddleware, roleMiddleware("ADMIN"), promoteToOfficer);
+
+// =====================================================
+// ADMIN CREATES GOVERNMENT / HEI / INDUSTRY ACCOUNTS
+// =====================================================
+
+router.post(
+  "/create-managed-user",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  createManagedUser
+);
+
+
+
 
 module.exports = router;

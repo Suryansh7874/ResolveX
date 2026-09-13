@@ -23,24 +23,32 @@ const issueSchema = new mongoose.Schema(
         category:{
             type: String,
             enum:[
-                "POTHOLE",
-                "ROAD_DAMAGE",
-                "GARBAGE",
-                "WATER_LEAKAGE",
-                "DRAINAGE",
-                "STREETLIGHT",
-                "SEWER",
+                "EDUCATION",
+                "HEALTHCARE",
+                "AGRICULTURE",
+                "WATER_RESOURCES",
+                "SANITATION",
+                "ENVIRONMENT",  
+                "ENERGY",
+                "RURAL_LIVELIHOODS",
+                "URBAN_DEVELOPMENT",
+                "ACCESSIBILITY",
+                "PUBLIC_ADMINISTRATION",
+                "DIGITAL_SERVICES",
+                "TRANSPORTATION",
+                "DISASTER_MANAGEMENT",
                 "OTHER",
             ],
             required:true,
             trim:true,
         },
 
-        departmentId:{
-            type:mongoose.Schema.Types.ObjectId,
-            ref:"Department",
-            required:true,
-        },
+        // departmentId:{
+        //     type:mongoose.Schema.Types.ObjectId,
+        //     ref:"Department",
+        //     required:true,
+        // },
+
         location: {
             type: {
                 type: String,
@@ -72,13 +80,19 @@ const issueSchema = new mongoose.Schema(
             type:String,
             uppercase:true,
             enum: [
-                "REPORTED",
-                "VERIFIED",
-                "ASSIGNED",
+                "SUBMITTED",
+                "AI_ANALYZED",
+                "UNDER_REVIEW",
+                "VALIDATED",
+                "MATCHED",
+                "HEI_ASSIGNED",
+                "PROJECT_CREATED",
                 "IN_PROGRESS",
-                "RESOLVED",
+                "PILOT",
+                "DEPLOYED",
+                "COMPLETED",
             ],
-            default:"REPORTED",
+            default:"SUBMITTED",
         },
 
 
@@ -96,11 +110,11 @@ const issueSchema = new mongoose.Schema(
 
         },
 
-        assignedTo:{
-            type:mongoose.Schema.Types.ObjectId,
-            ref:"User",
-            default:null,
-        },
+        // assignedTo:{
+        //     type:mongoose.Schema.Types.ObjectId,
+        //     ref:"User",
+        //     default:null,
+        // },
 
 
         upvotedBy:[
@@ -155,10 +169,11 @@ const issueSchema = new mongoose.Schema(
         //         default: "UNCERTAIN"
         //     }
         // }
-        deadline: {
-            type: Date,
-            default: null,
-        },
+
+        // deadline: {
+        //     type: Date,
+        //     default: null,
+        // },
 
     },
 

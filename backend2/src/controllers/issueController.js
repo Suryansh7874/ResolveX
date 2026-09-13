@@ -1,5 +1,6 @@
 const Issue = require("../models/Issue");
 const User = require("../models/User");
+const Challenge = require("../models/Challenge");
 
 const { classifyIssueWithAI } = require("./aiControllers");
 
