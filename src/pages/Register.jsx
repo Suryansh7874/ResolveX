@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 
 import { registerUser } from "../services/authService";
-
+import monsoonBg from "../assets/monsoon.jpg";
 function Register() {
   const [formData, setFormData] = useState({
     name: "",
@@ -70,7 +70,7 @@ function Register() {
   };
 
   return (
-    <main className="auth-page">
+    <div className="auth-page">
 
       <section className="register-card">
 
@@ -236,7 +236,7 @@ function Register() {
 
       </section>
 
-    </main>
+    </div>
   );
 }
 

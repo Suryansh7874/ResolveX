@@ -403,7 +403,7 @@ function ReportIssue() {
 
         .report-page {
           min-height: 100vh;
-          background: #f5f7fa;
+          background: #112c56ff;
           color: #1f2937;
           font-family: Arial, Helvetica, sans-serif;
         }

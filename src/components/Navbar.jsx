@@ -1,9 +1,17 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { logoutUser } from "../services/authService";
 
 function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const token = localStorage.getItem("token");
+
+  // Hide the normal navbar on Landing Page
+  // LandingPage has its own LandingNavbar
+  if (location.pathname === "/") {
+    return null;
+  }
 
   const handleLogout = () => {
     logoutUser();

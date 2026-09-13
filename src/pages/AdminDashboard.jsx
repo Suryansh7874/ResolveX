@@ -1398,11 +1398,10 @@ function AdminDashboard() {
           <header className="admin-header">
             <div>
               <div className="admin-header-label">
-                Overview
-              </div>
+Admin Dashboard              </div>
 
               <h1 className="admin-title">
-                Admin Dashboard
+                Welcome,
               </h1>
 
               <p className="admin-subtitle">

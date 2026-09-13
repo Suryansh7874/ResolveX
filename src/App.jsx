@@ -1,5 +1,3 @@
-
-
 import {
   BrowserRouter,
   Routes,
@@ -14,22 +12,39 @@ import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
 
+import LandingPage from "./pages/LandingPage";
+
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminIssues from "./pages/AdminIssues";
+
 import OfficerDashboard from "./pages/OfficerDashboard";
+
 import Officers from "./pages/Officers";
+
 import ReportIssue from "./pages/ReportIssue";
 import MyIssues from "./pages/MyIssues";
+
 
 function App() {
   return (
     <BrowserRouter>
 
+      {/* ================= NORMAL NAVBAR ================= */}
+      {/* Hidden automatically on Landing Page (/) */}
       <Navbar />
+
 
       <Routes>
 
-        {/* PUBLIC ROUTES */}
+        {/* ================= LANDING PAGE ================= */}
+
+        <Route
+          path="/"
+          element={<LandingPage />}
+        />
+
+
+        {/* ================= PUBLIC ROUTES ================= */}
 
         <Route
           path="/register"
@@ -42,7 +57,7 @@ function App() {
         />
 
 
-        {/* CITIZEN DASHBOARD */}
+        {/* ================= CITIZEN DASHBOARD ================= */}
 
         <Route
           path="/dashboard"
@@ -54,7 +69,7 @@ function App() {
         />
 
 
-        {/* REPORT ISSUE */}
+        {/* ================= REPORT ISSUE ================= */}
 
         <Route
           path="/report-issue"
@@ -65,18 +80,20 @@ function App() {
           }
         />
 
-{/* MY ISSUES */}
 
-<Route
-  path="/issues"
-  element={
-    <ProtectedRoute>
-      <MyIssues />
-    </ProtectedRoute>
-  }
-/>
+        {/* ================= MY ISSUES ================= */}
 
-        {/* ADMIN DASHBOARD */}
+        <Route
+          path="/issues"
+          element={
+            <ProtectedRoute>
+              <MyIssues />
+            </ProtectedRoute>
+          }
+        />
+
+
+        {/* ================= ADMIN DASHBOARD ================= */}
 
         <Route
           path="/admin"
@@ -88,7 +105,7 @@ function App() {
         />
 
 
-        {/* ADMIN ISSUES */}
+        {/* ================= ADMIN ISSUES ================= */}
 
         <Route
           path="/admin/issues"
@@ -100,7 +117,7 @@ function App() {
         />
 
 
-        {/* ADMIN OFFICERS */}
+        {/* ================= ADMIN OFFICERS ================= */}
 
         <Route
           path="/admin/officers"
@@ -112,7 +129,7 @@ function App() {
         />
 
 
-        {/* OFFICER DASHBOARD */}
+        {/* ================= OFFICER DASHBOARD ================= */}
 
         <Route
           path="/officer"
@@ -124,29 +141,11 @@ function App() {
         />
 
 
-        {/* DEFAULT */}
-
-        <Route
-          path="/"
-          element={
-            <Navigate
-              to="/login"
-              replace
-            />
-          }
-        />
-
-
-        {/* UNKNOWN ROUTES */}
+        {/* ================= UNKNOWN ROUTES ================= */}
 
         <Route
           path="*"
-          element={
-            <Navigate
-              to="/login"
-              replace
-            />
-          }
+          element={<Navigate to="/" replace />}
         />
 
       </Routes>
