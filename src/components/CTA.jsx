@@ -25,7 +25,7 @@ function CTA() {
         </div>
 
         <Link
-          to="/register"
+          to="/login"
           className="cta-button"
         >
           Report an Issue

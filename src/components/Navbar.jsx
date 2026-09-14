@@ -5,6 +5,8 @@ import {
   getNotifications,
   markNotificationAsRead,
 } from "../services/notificationService";
+import { Bell } from "lucide-react";
+
 
 function Navbar() {
   const navigate = useNavigate();
@@ -78,7 +80,7 @@ function Navbar() {
     logoutUser();
     setNotifications([]);
     setShowNotifications(false);
-    navigate("/login");
+    navigate("/");
   };
 
   // Hide normal navbar on landing page
@@ -123,7 +125,7 @@ function Navbar() {
                   }
                   aria-label="Notifications"
                 >
-                  🔔
+                  <Bell size={20}/>
 
                   {unreadCount > 0 && (
                     <span className="notification-badge">
