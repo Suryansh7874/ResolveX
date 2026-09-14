@@ -213,12 +213,12 @@ const role = data.user.role;
                 <span>Remember me</span>
               </label>
 
-              <button
-                type="button"
+              <Link
+                to="/forgot-password"
                 className="forgot-password"
               >
                 Forgot Password?
-              </button>
+              </Link>
 
             </div>
 
