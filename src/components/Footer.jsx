@@ -23,8 +23,8 @@ function Footer() {
         <div className="footer-links">
           <h3>Quick Links</h3>
 
-          <Link to="/">Home</Link>
-          <Link to="/about">About Us</Link>
+          <Link to="/about">Home</Link>
+          {/* <Link to="/about">About Us</Link> */}
           <a href="#how-it-works">How It Works</a>
           <Link to="/contact">Contact</Link>
         </div>

@@ -44,7 +44,7 @@ function Hero() {
           <div className="hero-buttons">
 
             <Link
-              to="/register"
+              to="/login"
               className="hero-primary-btn"
             >
               Report an Issue
