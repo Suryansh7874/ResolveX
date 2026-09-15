@@ -37,7 +37,6 @@ function App() {
       {/* Hidden automatically on Landing Page (/) */}
       <Navbar />
 
-
       <Routes>
 
         {/* ================= LANDING PAGE ================= */}
@@ -59,6 +58,7 @@ function App() {
           path="/login"
           element={<Login />}
         />
+
         <Route
           path="/forgot-password"
           element={<ForgotPassword />}
@@ -104,6 +104,9 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+
+       
 
 
         {/* ================= ADMIN DASHBOARD ================= */}
@@ -154,15 +157,19 @@ function App() {
         />
 
 
+        {/* ================= CHALLENGE DETAILS ================= */}
+
+        <Route
+          path="/challenges/:id"
+          element={<ChallengeDetails />}
+        />
+
+
         {/* ================= UNKNOWN ROUTES ================= */}
 
         <Route
           path="*"
           element={<Navigate to="/" replace />}
-        />
-        <Route
-           path="/challenges/:id" 
-           element={<ChallengeDetails />}
         />
 
       </Routes>

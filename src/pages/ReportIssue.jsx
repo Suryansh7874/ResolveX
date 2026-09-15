@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -164,7 +163,11 @@ function ReportIssue() {
     recognitionRef.current = recognition;
 
     return () => {
-      recognition.stop();
+      try {
+        recognition.stop();
+      } catch (error) {
+        console.error("Speech cleanup error:", error);
+      }
     };
   }, []);
 
@@ -181,6 +184,11 @@ function ReportIssue() {
       return;
     }
 
+    // Release previous preview URL
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
     setImage(file);
     setImagePreview(URL.createObjectURL(file));
     setError("");
@@ -190,6 +198,10 @@ function ReportIssue() {
   // REMOVE IMAGE
   // --------------------------------------------------
   const removeImage = () => {
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
     setImage(null);
     setImagePreview("");
   };
@@ -213,7 +225,12 @@ function ReportIssue() {
     }
 
     if (isListening) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.error("Voice stop error:", error);
+      }
+
       setIsListening(false);
       return;
     }
@@ -224,6 +241,86 @@ function ReportIssue() {
       recognitionRef.current.start();
     } catch (error) {
       console.error("Voice start error:", error);
+
+      setError(
+        "Voice recognition could not be started. Please try again."
+      );
+    }
+  };
+
+  // --------------------------------------------------
+  // CLEAN / PARSE SERVER RESPONSE
+  // --------------------------------------------------
+  const parseServerResponse = (responseText) => {
+    if (!responseText || !responseText.trim()) {
+      return null;
+    }
+
+    let cleanedResponse = responseText.trim();
+
+    /*
+     * Sometimes the AI/backend may return:
+     *
+     * ```json
+     * {
+     *   ...
+     * }
+     * ```
+     *
+     * Remove Markdown code fences before parsing.
+     */
+    cleanedResponse = cleanedResponse
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+
+    try {
+      return JSON.parse(cleanedResponse);
+    } catch (error) {
+      console.error(
+        "JSON parsing failed:",
+        error
+      );
+
+      console.error(
+        "Raw server response:",
+        responseText
+      );
+
+      console.error(
+        "Cleaned server response:",
+        cleanedResponse
+      );
+
+      /*
+       * Sometimes there can be extra text before/after
+       * the JSON object. Try extracting the object.
+       */
+      const firstBrace = cleanedResponse.indexOf("{");
+      const lastBrace = cleanedResponse.lastIndexOf("}");
+
+      if (
+        firstBrace !== -1 &&
+        lastBrace !== -1 &&
+        lastBrace > firstBrace
+      ) {
+        const possibleJson = cleanedResponse.substring(
+          firstBrace,
+          lastBrace + 1
+        );
+
+        try {
+          return JSON.parse(possibleJson);
+        } catch (secondError) {
+          console.error(
+            "Second JSON parsing attempt failed:",
+            secondError
+          );
+        }
+      }
+
+      return null;
     }
   };
 
@@ -280,7 +377,10 @@ function ReportIssue() {
     try {
       const formData = new FormData();
 
-      formData.append("title", title.trim());
+      formData.append(
+        "title",
+        title.trim()
+      );
 
       formData.append(
         "description",
@@ -295,19 +395,48 @@ function ReportIssue() {
         })
       );
 
-      formData.append("image", image);
+      formData.append(
+        "image",
+        image
+      );
 
-      // Send category only if selected.
+      // Send category only if selected
       if (category) {
-        formData.append("category", category);
+        formData.append(
+          "category",
+          category
+        );
       }
 
-      console.log("Submitting ResolveX challenge...");
-      console.log("Title:", title.trim());
-      console.log("Category:", category);
-      console.log("Description:", description.trim());
-      console.log("Location:", location);
-      console.log("Image:", image.name);
+      console.log(
+        "----------------------------------------"
+      );
+      console.log(
+        "Submitting ResolveX challenge..."
+      );
+      console.log(
+        "Title:",
+        title.trim()
+      );
+      console.log(
+        "Category:",
+        category
+      );
+      console.log(
+        "Description:",
+        description.trim()
+      );
+      console.log(
+        "Location:",
+        location
+      );
+      console.log(
+        "Image:",
+        image.name
+      );
+      console.log(
+        "----------------------------------------"
+      );
 
       const response = await fetch(
         "http://localhost:5000/api/issues",
@@ -320,33 +449,79 @@ function ReportIssue() {
         }
       );
 
-      const responseText = await response.text();
+      // Always read the raw response first
+      const responseText =
+        await response.text();
 
-      let data = null;
+      console.log(
+        "Server status:",
+        response.status
+      );
 
-      if (responseText) {
-        try {
-          data = JSON.parse(responseText);
-        } catch (parseError) {
-          console.error(
-            "Response JSON parse error:",
-            parseError
-          );
+      console.log(
+        "Raw server response:",
+        responseText
+      );
 
+      // Parse response safely
+      const data =
+        parseServerResponse(responseText);
+
+      /*
+       * IMPORTANT:
+       * Handle HTTP errors separately from JSON parsing.
+       *
+       * This means if backend returns 400, we show the
+       * actual backend error instead of incorrectly saying
+       * "invalid JSON".
+       */
+      if (!response.ok) {
+        const serverMessage =
+          data?.message ||
+          data?.error ||
+          data?.msg;
+
+        if (serverMessage) {
           throw new Error(
-            `Server returned an invalid response. Status: ${response.status}`
+            serverMessage
           );
         }
-      }
 
-      if (!response.ok) {
+        /*
+         * If backend returned plain text rather than JSON,
+         * display that text.
+         */
+        if (
+          responseText &&
+          responseText.trim()
+        ) {
+          throw new Error(
+            `Server error (${response.status}): ${responseText.trim()}`
+          );
+        }
+
         throw new Error(
-          data?.message ||
-            `Failed to submit challenge. Status: ${response.status}`
+          `Failed to submit challenge. Status: ${response.status}`
         );
       }
 
-      console.log("Challenge created:", data);
+      /*
+       * If request succeeded but response could not be
+       * parsed, don't crash the application.
+       */
+      if (
+        responseText.trim() &&
+        !data
+      ) {
+        throw new Error(
+          "The challenge was processed, but the server returned an invalid response."
+        );
+      }
+
+      console.log(
+        "Challenge created:",
+        data
+      );
 
       setMessage(
         "Your societal challenge has been submitted successfully."
@@ -357,12 +532,20 @@ function ReportIssue() {
       setCategory("");
       setDescription("");
       setImage(null);
+
+      if (imagePreview) {
+        URL.revokeObjectURL(
+          imagePreview
+        );
+      }
+
       setImagePreview("");
 
       // Redirect
       setTimeout(() => {
         navigate("/dashboard");
       }, 1800);
+
     } catch (error) {
       console.error(
         "Submit challenge error:",
@@ -905,7 +1088,7 @@ function ReportIssue() {
         }
 
         .ai-tag {
-          background: rgba(255,255,255,0.8);
+          background: rgba(255, 255, 255, 0.8);
           border: 1px solid #ddd6fe;
           border-radius: 20px;
           padding: 6px 10px;
@@ -1030,6 +1213,7 @@ function ReportIssue() {
 
             <div>
               <h2>ResolveX</h2>
+
               <span>
                 From Challenge to Real-World Impact
               </span>
@@ -1061,6 +1245,7 @@ function ReportIssue() {
           </div>
 
           <div className="workflow-info">
+
             <Sparkles size={18} />
 
             <span>
@@ -1069,6 +1254,7 @@ function ReportIssue() {
               reviewed by the government, and matched
               with suitable institutions.
             </span>
+
           </div>
 
           <form
@@ -1086,6 +1272,7 @@ function ReportIssue() {
                 </div>
 
                 <div>
+
                   <h2>
                     Challenge Information
                   </h2>
@@ -1094,6 +1281,7 @@ function ReportIssue() {
                     Give us a clear understanding of
                     the problem you want to highlight.
                   </p>
+
                 </div>
 
               </div>
@@ -1101,8 +1289,13 @@ function ReportIssue() {
               <div className="field-group">
 
                 <label className="field-label">
+
                   Challenge Title{" "}
-                  <span className="required">*</span>
+
+                  <span className="required">
+                    *
+                  </span>
+
                 </label>
 
                 <input
@@ -1183,6 +1376,7 @@ function ReportIssue() {
                 </div>
 
                 <div>
+
                   <h2>
                     Describe the Challenge
                   </h2>
@@ -1191,6 +1385,7 @@ function ReportIssue() {
                     Explain the problem, its location,
                     affected people, and why it matters.
                   </p>
+
                 </div>
 
               </div>
@@ -1211,7 +1406,9 @@ function ReportIssue() {
                   <button
                     type="button"
                     className={`voice-button ${
-                      isListening ? "recording" : ""
+                      isListening
+                        ? "recording"
+                        : ""
                     }`}
                     onClick={handleVoiceInput}
                     disabled={!speechSupported}
@@ -1233,17 +1430,22 @@ function ReportIssue() {
 
                   {isListening && (
                     <div className="recording-indicator">
+
                       <span className="pulse-dot"></span>
+
                       Listening...
+
                     </div>
                   )}
 
                 </div>
 
                 <p className="voice-help">
+
                   You can type your description or use
                   the microphone to describe the challenge
                   naturally.
+
                 </p>
 
               </div>
@@ -1260,6 +1462,7 @@ function ReportIssue() {
                 </div>
 
                 <div>
+
                   <h2>
                     Supporting Image
                   </h2>
@@ -1268,6 +1471,7 @@ function ReportIssue() {
                     Add an image that helps explain
                     the real-world problem.
                   </p>
+
                 </div>
 
               </div>
@@ -1331,6 +1535,7 @@ function ReportIssue() {
                 </div>
 
                 <div>
+
                   <h2>
                     Challenge Location
                   </h2>
@@ -1339,6 +1544,7 @@ function ReportIssue() {
                     The location helps ResolveX understand
                     where the problem exists.
                   </p>
+
                 </div>
 
               </div>
@@ -1435,16 +1641,26 @@ function ReportIssue() {
             {/* ERROR */}
             {error && (
               <div className="form-message error-message">
+
                 <X size={18} />
-                {error}
+
+                <span>
+                  {error}
+                </span>
+
               </div>
             )}
 
             {/* SUCCESS */}
             {message && (
               <div className="form-message success-message">
+
                 <CheckCircle size={18} />
-                {message}
+
+                <span>
+                  {message}
+                </span>
+
               </div>
             )}
 
@@ -1461,11 +1677,13 @@ function ReportIssue() {
                     size={20}
                     className="submit-loader"
                   />
+
                   Submitting Challenge...
                 </>
               ) : (
                 <>
                   <Send size={19} />
+
                   Submit Challenge
                 </>
               )}

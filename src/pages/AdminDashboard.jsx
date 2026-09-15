@@ -1,18 +1,29 @@
-
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ClipboardList,
   Users,
   UserCog,
-  AlertCircle,
   CheckCircle2,
   Clock3,
   ArrowUpRight,
-  MapPin,
   Loader2,
   RefreshCw,
-  UserPlus,
+  Building2,
+  XCircle,
+  GitMerge,
+  FolderKanban,
+  BarChart3,
+  ShieldCheck,
+  BriefcaseBusiness,
+  Activity,
+  Target,
+  MapPin,
+  ChevronRight,
+  TrendingUp,
+  Globe2,
+  Layers3,
+  Sparkles,
 } from "lucide-react";
 
 import api from "../services/api";
@@ -24,9 +35,9 @@ function AdminDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
-  // =========================================================
-  // FETCH ISSUES
-  // =========================================================
+  /* =========================================================
+     FETCH CHALLENGES
+  ========================================================= */
 
   const fetchIssues = async () => {
     try {
@@ -34,17 +45,19 @@ function AdminDashboard() {
 
       const response = await api.get("/issues");
 
-      console.log("ISSUES FROM BACKEND:", response.data);
+      console.log("DATA FROM BACKEND:", response.data);
 
       const fetchedIssues = response.data?.issues || [];
 
-      setIssues(Array.isArray(fetchedIssues) ? fetchedIssues : []);
+      setIssues(
+        Array.isArray(fetchedIssues) ? fetchedIssues : []
+      );
     } catch (err) {
-      console.error("Failed to fetch issues:", err);
+      console.error("Failed to fetch data:", err);
 
       setError(
         err.response?.data?.message ||
-          "Failed to fetch issues. Please try again."
+          "Failed to fetch challenges. Please try again."
       );
     } finally {
       setLoading(false);
@@ -56,143 +69,169 @@ function AdminDashboard() {
     fetchIssues();
   }, []);
 
-  // =========================================================
-  // REFRESH
-  // =========================================================
-
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchIssues();
   };
 
-  // =========================================================
-  // NORMALIZE STATUS
-  // =========================================================
+  /* =========================================================
+     HELPERS
+  ========================================================= */
 
-  const normalizeStatus = (status) => {
-    return String(status || "")
+  const normalizeStatus = (status) =>
+    String(status || "")
       .trim()
       .toLowerCase()
       .replace(/[\s-]+/g, "_");
+
+  const isValidated = (issue) => {
+    const status = normalizeStatus(issue?.status);
+
+    return [
+      "validated",
+      "verified",
+      "approved",
+      "government_validated",
+    ].includes(status);
   };
 
-  // =========================================================
-  // CHECK ASSIGNMENT
-  // =========================================================
+  const isRejected = (issue) => {
+    const status = normalizeStatus(issue?.status);
 
-  const isAssigned = (issue) => {
-    if (!issue) return false;
+    return ["rejected", "declined"].includes(status);
+  };
 
-    const status = normalizeStatus(issue.status);
+  const isMatched = (issue) => {
+    const status = normalizeStatus(issue?.status);
 
-    const possibleAssignmentValues = [
-      issue.assignedTo,
-      issue.assignedOfficer,
-      issue.officer,
-      issue.assigned_to,
-      issue.assignedOfficerId,
-      issue.officerId,
-    ];
+    return [
+      "matched",
+      "allocated",
+      "assigned",
+      "team_formed",
+      "teamformed",
+    ].includes(status);
+  };
 
-    const hasAssignedOfficer = possibleAssignmentValues.some((value) => {
-      if (value === null || value === undefined || value === "") {
-        return false;
-      }
+  const isActiveProject = (issue) => {
+    const status = normalizeStatus(issue?.status);
 
-      if (typeof value === "object") {
-        if (Array.isArray(value)) {
-          return value.length > 0;
-        }
+    return [
+      "active_project",
+      "project_active",
+      "in_progress",
+      "inprogress",
+      "pilot",
+    ].includes(status);
+  };
 
-        return (
-          Object.keys(value).length > 0 &&
-          Boolean(
-            value._id ||
-              value.id ||
-              value.name ||
-              value.email
-          )
-        );
-      }
+  const isCompletedProject = (issue) => {
+    const status = normalizeStatus(issue?.status);
 
-      return true;
-    });
+    return [
+      "completed",
+      "project_completed",
+      "closed",
+      "resolved",
+    ].includes(status);
+  };
 
-    return (
-      hasAssignedOfficer ||
-      status === "assigned" ||
-      status === "in_progress" ||
-      status === "inprogress"
+  const isPendingReview = (issue) => {
+    const status = normalizeStatus(issue?.status);
+
+    return [
+      "reported",
+      "pending",
+      "submitted",
+      "pending_review",
+      "under_review",
+    ].includes(status);
+  };
+
+  const totalChallenges = issues.length;
+  const validatedChallenges = issues.filter(isValidated).length;
+  const rejectedChallenges = issues.filter(isRejected).length;
+  const matchedChallenges = issues.filter(isMatched).length;
+  const activeProjects = issues.filter(isActiveProject).length;
+  const completedProjects = issues.filter(isCompletedProject).length;
+  const pendingReview = issues.filter(isPendingReview).length;
+
+  const percentage = (value) => {
+    if (!totalChallenges) return 0;
+
+    return Math.min(
+      100,
+      Math.round((value / totalChallenges) * 100)
     );
   };
 
-  // =========================================================
-  // STATISTICS
-  // =========================================================
-
-  const totalIssues = issues.length;
-
-  const reportedIssues = issues.filter((issue) => {
-    const status = normalizeStatus(issue.status);
-
-    return (
-      status === "reported" ||
-      status === "pending" ||
-      status === "submitted"
-    );
-  }).length;
-
-  const assignedIssues = issues.filter((issue) =>
-    isAssigned(issue)
-  ).length;
-
-  const inProgressIssues = issues.filter((issue) => {
-    const status = normalizeStatus(issue.status);
-
-    return (
-      status === "in_progress" ||
-      status === "inprogress"
-    );
-  }).length;
-
-  const resolvedIssues = issues.filter((issue) => {
-    const status = normalizeStatus(issue.status);
-
-    return (
-      status === "resolved" ||
-      status === "completed" ||
-      status === "closed"
-    );
-  }).length;
-
-  const awaitingAssignment = issues.filter(
-    (issue) => !isAssigned(issue)
-  ).length;
-
-  // =========================================================
-  // STATUS HELPERS
-  // =========================================================
+  /* =========================================================
+     STATUS LABELS
+  ========================================================= */
 
   const getStatusLabel = (status) => {
     const normalized = normalizeStatus(status);
 
-    if (normalized === "reported") return "Reported";
-    if (normalized === "verified") return "Verified";
-    if (normalized === "assigned") return "Assigned";
-
     if (
-      normalized === "in_progress" ||
-      normalized === "inprogress"
+      [
+        "reported",
+        "pending",
+        "submitted",
+        "pending_review",
+        "under_review",
+      ].includes(normalized)
     ) {
-      return "In Progress";
+      return "Pending Review";
     }
 
     if (
-      normalized === "resolved" ||
-      normalized === "completed" ||
-      normalized === "closed"
+      [
+        "validated",
+        "verified",
+        "approved",
+        "government_validated",
+      ].includes(normalized)
     ) {
-      return "Resolved";
+      return "Validated";
+    }
+
+    if (["rejected", "declined"].includes(normalized)) {
+      return "Rejected";
+    }
+
+    if (
+      [
+        "matched",
+        "allocated",
+        "assigned",
+        "team_formed",
+        "teamformed",
+      ].includes(normalized)
+    ) {
+      return "Assigned";
+    }
+
+    if (
+      [
+        "in_progress",
+        "inprogress",
+        "active_project",
+        "project_active",
+        "pilot",
+      ].includes(normalized)
+    ) {
+      return "Active Project";
+    }
+
+    if (
+      [
+        "completed",
+        "project_completed",
+        "closed",
+        "resolved",
+      ].includes(normalized)
+    ) {
+      return "Completed";
     }
 
     return status || "Unknown";
@@ -201,41 +240,348 @@ function AdminDashboard() {
   const getStatusClass = (status) => {
     const normalized = normalizeStatus(status);
 
-    if (normalized === "reported") {
-      return "status-reported";
-    }
-
-    if (normalized === "verified") {
-      return "status-verified";
-    }
-
-    if (normalized === "assigned") {
-      return "status-assigned";
+    if (
+      [
+        "reported",
+        "pending",
+        "submitted",
+        "pending_review",
+        "under_review",
+      ].includes(normalized)
+    ) {
+      return "status-pending";
     }
 
     if (
-      normalized === "in_progress" ||
-      normalized === "inprogress"
+      [
+        "validated",
+        "verified",
+        "approved",
+        "government_validated",
+      ].includes(normalized)
     ) {
-      return "status-progress";
+      return "status-validated";
+    }
+
+    if (["rejected", "declined"].includes(normalized)) {
+      return "status-rejected";
     }
 
     if (
-      normalized === "resolved" ||
-      normalized === "completed" ||
-      normalized === "closed"
+      [
+        "matched",
+        "allocated",
+        "assigned",
+        "team_formed",
+        "teamformed",
+      ].includes(normalized)
     ) {
-      return "status-resolved";
+      return "status-matched";
+    }
+
+    if (
+      [
+        "in_progress",
+        "inprogress",
+        "active_project",
+        "project_active",
+        "pilot",
+      ].includes(normalized)
+    ) {
+      return "status-active";
+    }
+
+    if (
+      [
+        "completed",
+        "project_completed",
+        "closed",
+        "resolved",
+      ].includes(normalized)
+    ) {
+      return "status-completed";
     }
 
     return "status-default";
   };
 
-  // =========================================================
-  // RECENT ISSUES
-  // =========================================================
+  /* =========================================================
+     DOMAIN / PRIORITY
+  ========================================================= */
 
-  const recentIssues = [...issues]
+  const getDomain = (issue) =>
+    issue?.domain ||
+    issue?.category ||
+    issue?.aiAnalysis?.domain ||
+    "Other";
+
+  const getPriority = (issue) =>
+    issue?.priority ||
+    issue?.aiAnalysis?.priority ||
+    "Normal";
+
+  const formatValue = (value, fallback = "Other") =>
+    String(value || fallback)
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+  const domainDistribution = useMemo(() => {
+    const counts = {};
+
+    issues.forEach((issue) => {
+      const domain = formatValue(getDomain(issue));
+
+      counts[domain] = (counts[domain] || 0) + 1;
+    });
+
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6);
+  }, [issues]);
+
+  const priorityDistribution = useMemo(() => {
+    const counts = {};
+
+    issues.forEach((issue) => {
+      const priority = formatValue(
+        getPriority(issue),
+        "Normal"
+      );
+
+      counts[priority] = (counts[priority] || 0) + 1;
+    });
+
+    return Object.entries(counts).sort(
+      (a, b) => b[1] - a[1]
+    );
+  }, [issues]);
+
+  /* =========================================================
+     PROJECT PROGRESS
+  ========================================================= */
+
+  const projectProgress = [
+    {
+      label: "Pending Review",
+      value: pendingReview,
+      className: "progress-pending",
+    },
+    {
+      label: "Validated",
+      value: validatedChallenges,
+      className: "progress-validated",
+    },
+    {
+      label: "Matched / Assigned",
+      value: matchedChallenges,
+      className: "progress-matched",
+    },
+    {
+      label: "Active Projects",
+      value: activeProjects,
+      className: "progress-active",
+    },
+    {
+      label: "Completed",
+      value: completedProjects,
+      className: "progress-completed",
+    },
+  ];
+
+  /* =========================================================
+     CIRCULAR PROGRESS CHART
+  ========================================================= */
+
+  const progressChartData = useMemo(() => {
+    const classified =
+      pendingReview +
+      validatedChallenges +
+      matchedChallenges +
+      activeProjects +
+      completedProjects;
+
+    const other = Math.max(
+      totalChallenges - classified,
+      0
+    );
+
+    return [
+      {
+        label: "Pending Review",
+        value: pendingReview,
+        color: "#fbbf24",
+      },
+      {
+        label: "Validated",
+        value: validatedChallenges,
+        color: "#4ade80",
+      },
+      {
+        label: "Matched",
+        value: matchedChallenges,
+        color: "#a78bfa",
+      },
+      {
+        label: "Active Projects",
+        value: activeProjects,
+        color: "#38bdf8",
+      },
+      {
+        label: "Completed",
+        value: completedProjects,
+        color: "#34d399",
+      },
+      {
+        label: "Other",
+        value: other,
+        color: "#94a3b8",
+      },
+    ];
+  }, [
+    pendingReview,
+    validatedChallenges,
+    matchedChallenges,
+    activeProjects,
+    completedProjects,
+    totalChallenges,
+  ]);
+
+  const progressChartStyle = useMemo(() => {
+    if (!totalChallenges) {
+      return {
+        background:
+          "conic-gradient(rgba(255,255,255,.10) 0deg 360deg)",
+      };
+    }
+
+    let currentAngle = 0;
+
+    const segments = progressChartData.map((item) => {
+      const angle =
+        (item.value / totalChallenges) * 360;
+
+      const start = currentAngle;
+      const end = currentAngle + angle;
+
+      currentAngle = end;
+
+      return `${item.color} ${start}deg ${end}deg`;
+    });
+
+    return {
+      background: `conic-gradient(${segments.join(", ")})`,
+    };
+  }, [progressChartData, totalChallenges]);
+
+  /* =========================================================
+     IMPACT METRICS
+  ========================================================= */
+
+  const getNumericValue = (issue, fields) => {
+    for (const field of fields) {
+      const value = issue?.[field];
+
+      if (
+        typeof value === "number" &&
+        !Number.isNaN(value)
+      ) {
+        return value;
+      }
+
+      if (
+        typeof value === "string" &&
+        value.trim() !== "" &&
+        !Number.isNaN(Number(value))
+      ) {
+        return Number(value);
+      }
+    }
+
+    return null;
+  };
+
+  const calculateMetric = (fields) => {
+    let total = 0;
+
+    issues.forEach((issue) => {
+      const value = getNumericValue(issue, fields);
+
+      if (value !== null) {
+        total += value;
+      }
+    });
+
+    return total;
+  };
+
+  const beneficiaries = calculateMetric([
+    "beneficiaries",
+    "beneficiaryCount",
+    "impactBeneficiaries",
+  ]);
+
+  const solutionsDeployed = calculateMetric([
+    "solutionsDeployed",
+    "deployedSolutions",
+    "solutionCount",
+  ]);
+
+  const villagesCovered = calculateMetric([
+    "villagesCovered",
+    "villageCount",
+    "coveredVillages",
+  ]);
+
+  /* =========================================================
+     ECOSYSTEM METRICS
+  ========================================================= */
+
+  const getUniqueCount = (fields) => {
+    const values = new Set();
+
+    issues.forEach((issue) => {
+      for (const field of fields) {
+        const value = issue?.[field];
+
+        if (value) {
+          if (Array.isArray(value)) {
+            value.forEach((item) => {
+              if (item) values.add(String(item));
+            });
+          } else {
+            values.add(String(value));
+          }
+
+          break;
+        }
+      }
+    });
+
+    return values.size;
+  };
+
+  const heiParticipation = getUniqueCount([
+    "heiId",
+    "institutionId",
+    "hei",
+    "institution",
+    "college",
+    "university",
+  ]);
+
+  const industryEngagement = getUniqueCount([
+    "industryId",
+    "organizationId",
+    "industry",
+    "organization",
+    "company",
+  ]);
+
+  /* =========================================================
+     RECENT CHALLENGES
+  ========================================================= */
+
+  const recentChallenges = [...issues]
     .sort((a, b) => {
       const dateA = new Date(
         a.createdAt || a.created_at || 0
@@ -248,10 +594,6 @@ function AdminDashboard() {
       return dateB - dateA;
     })
     .slice(0, 5);
-
-  // =========================================================
-  // DATE
-  // =========================================================
 
   const formatDate = (date) => {
     if (!date) return "Recently";
@@ -269,1621 +611,2150 @@ function AdminDashboard() {
     });
   };
 
-  // =========================================================
-  // LOCATION
-  // =========================================================
+  const getChallengeTitle = (issue) =>
+    issue?.title ||
+    issue?.name ||
+    issue?.description ||
+    "Untitled Challenge";
 
   const getLocation = (issue) => {
-    if (!issue) return "Location not available";
-
-    if (typeof issue.location === "string") {
+    if (typeof issue?.location === "string") {
       return issue.location;
     }
 
-    if (issue.location?.address) {
-      return issue.location.address;
-    }
-
-    if (issue.location?.name) {
-      return issue.location.name;
-    }
-
-    if (issue.location?.coordinates) {
-      const coordinates = issue.location.coordinates;
-
-      if (
-        Array.isArray(coordinates) &&
-        coordinates.length >= 2
-      ) {
-        return `${coordinates[1].toFixed(4)}, ${coordinates[0].toFixed(4)}`;
-      }
-    }
-
-    if (issue.address) {
-      return issue.address;
-    }
-
-    return "Location not available";
+    return (
+      issue?.location?.address ||
+      issue?.location?.name ||
+      "Location not available"
+    );
   };
 
-  // =========================================================
-  // UI
-  // =========================================================
+  /* =========================================================
+     STAT CARDS
+  ========================================================= */
+
+  const statCards = [
+    {
+      label: "Total Challenges",
+      value: totalChallenges,
+      percent: 100,
+      icon: ClipboardList,
+      className: "blue",
+    },
+    {
+      label: "Validated",
+      value: validatedChallenges,
+      percent: percentage(validatedChallenges),
+      icon: CheckCircle2,
+      className: "green",
+    },
+    {
+      label: "Rejected",
+      value: rejectedChallenges,
+      percent: percentage(rejectedChallenges),
+      icon: XCircle,
+      className: "red",
+    },
+    {
+      label: "Matched",
+      value: matchedChallenges,
+      percent: percentage(matchedChallenges),
+      icon: GitMerge,
+      className: "purple",
+    },
+    {
+      label: "Active Projects",
+      value: activeProjects,
+      percent: percentage(activeProjects),
+      icon: Activity,
+      className: "cyan",
+    },
+    {
+      label: "Completed Projects",
+      value: completedProjects,
+      percent: percentage(completedProjects),
+      icon: Target,
+      className: "emerald",
+    },
+  ];
+
+  /* =========================================================
+     RENDER
+  ========================================================= */
 
   return (
     <>
-     <style>{`
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          margin: 0;
+        }
+
+        .admin-page {
+          min-height: 100vh;
+          padding: 42px 5% 80px;
+          color: #f8fafc;
+          font-family: "Manrope", Arial, sans-serif;
+
+          background:
+            linear-gradient(
+              135deg,
+              rgba(5, 15, 27, 0.76),
+              rgba(9, 24, 40, 0.82)
+            ),
+            url(${monsoonBg});
+
+          background-size: cover;
+          background-position: center;
+          background-attachment: fixed;
+        }
+
+        .admin-container {
+          width: 100%;
+          max-width: 1320px;
+          margin: 0 auto;
+        }
+
+        .dashboard-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          gap: 30px;
+          margin-bottom: 30px;
+        }
+
+        .header-left {
+          max-width: 820px;
+        }
+
+        .eyebrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 9px;
+          padding: 7px 12px;
+          margin-bottom: 14px;
+          border: 1px solid rgba(148,163,184,.22);
+          border-radius: 999px;
+          background: rgba(15,23,42,.42);
+          backdrop-filter: blur(18px);
+          color: #bfdbfe;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+        }
+
+        .eyebrow-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #60a5fa;
+          box-shadow: 0 0 14px rgba(96,165,250,.9);
+        }
+
+        .dashboard-title {
+          margin: 0;
+          font-size: clamp(34px, 4vw, 52px);
+          line-height: 1;
+          font-weight: 800;
+          letter-spacing: -2.2px;
+          color: #fff;
+        }
+
+        .dashboard-subtitle {
+          margin: 14px 0 0;
+          max-width: 760px;
+          color: rgba(226,232,240,.78);
+          font-size: 15px;
+          line-height: 1.75;
+        }
+
+        .refresh-button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 9px;
+          padding: 12px 17px;
+          border: 1px solid rgba(255,255,255,.16);
+          border-radius: 13px;
+          background: rgba(15,23,42,.48);
+          color: #fff;
+          font-family: inherit;
+          font-size: 13px;
+          font-weight: 800;
+          cursor: pointer;
+          backdrop-filter: blur(16px);
+          box-shadow: 0 12px 30px rgba(0,0,0,.18);
+          transition: .22s ease;
+        }
+
+        .refresh-button:hover {
+          transform: translateY(-2px);
+          background: rgba(30,41,59,.7);
+          border-color: rgba(147,197,253,.35);
+        }
+
+        .refresh-button:disabled {
+          opacity: .65;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        .spin {
+          animation: spin .9s linear infinite;
+        }
+
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        .error-box {
+          margin-bottom: 22px;
+          padding: 15px 18px;
+          border: 1px solid rgba(248,113,113,.3);
+          border-radius: 14px;
+          background: rgba(127,29,29,.35);
+          color: #fecaca;
+          font-size: 13px;
+        }
+
+        /* =====================================================
+           STAT CARDS
+        ===================================================== */
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 15px;
+          margin-bottom: 24px;
+        }
+
+        .stat-card {
+          position: relative;
+          overflow: hidden;
+          min-height: 130px;
+          padding: 17px 18px;
+          border: 1px solid rgba(255,255,255,.12);
+          border-radius: 17px;
+          background:
+            linear-gradient(
+              145deg,
+              rgba(255,255,255,.13),
+              rgba(255,255,255,.055)
+            );
+          backdrop-filter: blur(20px);
+          box-shadow: 0 20px 45px rgba(0,0,0,.16);
+          transition:
+            transform .22s ease,
+            border-color .22s ease,
+            box-shadow .22s ease;
+        }
+
+        .stat-card:hover {
+          transform: translateY(-5px);
+          border-color: rgba(147,197,253,.28);
+          box-shadow: 0 25px 55px rgba(0,0,0,.22);
+        }
+
+        .stat-card::before {
+          content: "";
+          position: absolute;
+          width: 120px;
+          height: 120px;
+          right: -55px;
+          top: -60px;
+          border-radius: 50%;
+          background: rgba(255,255,255,.06);
+        }
+
+        .stat-card::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          width: 42%;
+          height: 2px;
+          opacity: .7;
+          background: currentColor;
+        }
+
+        .stat-card.blue { color: #60a5fa; }
+        .stat-card.green { color: #4ade80; }
+        .stat-card.red { color: #f87171; }
+        .stat-card.purple { color: #a78bfa; }
+        .stat-card.cyan { color: #38bdf8; }
+        .stat-card.emerald { color: #34d399; }
+
+        .stat-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 14px;
+        }
+
+        .stat-icon {
+          width: 39px;
+          height: 39px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 11px;
+          background: rgba(255,255,255,.075);
+          color: currentColor;
+        }
+
+        .stat-percent {
+          padding: 5px 8px;
+          border: 1px solid rgba(255,255,255,.08);
+          border-radius: 999px;
+          background: rgba(255,255,255,.055);
+          color: rgba(226,232,240,.72);
+          font-size: 10px;
+          font-weight: 800;
+        }
+
+        .stat-value {
+          margin-bottom: 5px;
+          color: #fff;
+          font-size: 28px;
+          line-height: 1;
+          font-weight: 800;
+          letter-spacing: -1.1px;
+        }
+
+        .stat-label {
+          color: rgba(226,232,240,.76);
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        /* =====================================================
+           PANELS
+        ===================================================== */
+
+        .panel,
+        .analytics-card,
+        .impact-card {
+          border: 1px solid rgba(255,255,255,.115);
+          background:
+            linear-gradient(
+              145deg,
+              rgba(255,255,255,.115),
+              rgba(255,255,255,.045)
+            );
+          backdrop-filter: blur(20px);
+          box-shadow: 0 22px 60px rgba(0,0,0,.16);
+        }
+
+        .panel {
+          overflow: hidden;
+          border-radius: 20px;
+        }
+
+        .panel-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 15px;
+          padding: 18px 20px;
+          border-bottom: 1px solid rgba(255,255,255,.075);
+        }
+
+        .panel-title-wrap {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+        }
+
+        .panel-icon {
+          width: 37px;
+          height: 37px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 11px;
+          background: rgba(96,165,250,.10);
+          color: #93c5fd;
+        }
+
+        .panel .panel-title {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 800;
+          color: #ffffff !important;
+          opacity: 1 !important;
+        }
+
+        .panel .panel-description {
+          margin: 3px 0 0;
+          color: rgba(255, 255, 255, 0.78) !important;
+          font-size: 11px;
+          line-height: 1.5;
+          opacity: 1 !important;
+        }
+
+        .panel-description {
+          margin: 3px 0 0;
+          color: rgba(226,232,240,.58);
+          font-size: 10px;
+        }
+
+        .view-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: #38bdf8;
+          font-size: 11px;
+          font-weight: 800;
+          text-decoration: none;
+          transition: .2s ease;
+        }
+
+        .view-link:hover {
+          color: #fff;
+          transform: translateX(2px);
+        }
+
+        .main-grid {
+          display: grid;
+          grid-template-columns: .88fr 1.35fr;
+          gap: 18px;
+          margin-bottom: 27px;
+        }
+
+        .review-body {
+          padding: 19px;
+        }
+
+        .review-highlight {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 15px;
+          border: 1px solid rgba(251,191,36,.18);
+          border-radius: 15px;
+          background:
+            linear-gradient(
+              135deg,
+              rgba(251,191,36,.105),
+              rgba(251,191,36,.035)
+            );
+          margin-bottom: 15px;
+        }
+
+        .review-highlight-icon {
+          width: 43px;
+          height: 43px;
+          min-width: 43px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 13px;
+          background: rgba(251,191,36,.12);
+          color: #fcd34d;
+        }
+
+        .review-number {
+          font-size: 27px;
+          line-height: 1;
+          font-weight: 800;
+          color: #fff;
+        }
+
+        .review-text {
+          margin-top: 5px;
+          color: rgba(226,232,240,.65);
+          font-size: 11px;
+          line-height: 1.45;
+        }
+
+        .review-actions {
+          display: grid;
+          gap: 8px;
+        }
+
+        .action-link {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 14px;
+          border: 1px solid rgba(255,255,255,.075);
+          border-radius: 12px;
+          background: rgba(255,255,255,.035);
+          color: #e2e8f0;
+          text-decoration: none;
+          font-size: 12px;
+          font-weight: 700;
+          transition: .2s ease;
+        }
+
+        .action-link:hover {
+          transform: translateX(4px);
+          background: rgba(255,255,255,.075);
+          border-color: rgba(147,197,253,.18);
+        }
+
+        .action-left {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+        }
+
+        .action-left svg {
+          color: #93c5fd;
+        }
+
+        .challenge-list {
+          padding: 5px 10px 8px;
+        }
+
+        .challenge-item {
+          display: grid;
+          grid-template-columns: minmax(0,1fr) auto;
+          gap: 16px;
+          padding: 14px 11px;
+          border-bottom: 1px solid rgba(255,255,255,.065);
+        }
+
+        .challenge-item:last-child {
+          border-bottom: none;
+        }
+
+        .challenge-title {
+          margin-bottom: 7px;
+          color: #fff;
+          font-size: 13px;
+          font-weight: 800;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .challenge-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 9px;
+          color: rgba(226,232,240,.68);
+          font-size: 11px;
+        }
+
+        .challenge-meta span {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          max-width: 220px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .challenge-meta svg {
+          flex-shrink: 0;
+          color: #93c5fd;
+        }
+
+        .status-badge {
+          align-self: start;
+          padding: 6px 9px;
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .status-pending {
+          background: rgba(251,191,36,.12);
+          color: #fcd34d;
+        }
+
+        .status-validated {
+          background: rgba(74,222,128,.12);
+          color: #86efac;
+        }
+
+        .status-rejected {
+          background: rgba(248,113,113,.12);
+          color: #fca5a5;
+        }
+
+        .status-matched {
+          background: rgba(167,139,250,.13);
+          color: #c4b5fd;
+        }
+
+        .status-active {
+          background: rgba(56,189,248,.12);
+          color: #7dd3fc;
+        }
+
+        .status-completed {
+          background: rgba(52,211,153,.12);
+          color: #6ee7b7;
+        }
+
+        .status-default {
+          background: rgba(255,255,255,.08);
+          color: #cbd5e1;
+        }
+
+        /* =====================================================
+           ANALYTICS
+        ===================================================== */
+
+        .section {
+          margin-bottom: 28px;
+        }
+
+        .section-heading {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          margin: 0 0 14px;
+          color: #fff;
+          font-size: 20px;
+          font-weight: 800;
+          letter-spacing: -.3px;
+        }
+
+        .section-heading svg {
+          color: #93c5fd;
+        }
+
+        .analytics-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 17px;
+        }
+
+        .analytics-card {
+          padding: 19px;
+          border-radius: 18px;
+        }
+
+        .analytics-card.full-width {
+          grid-column: span 2;
+        }
+
+        /* =====================================================
+           CHALLENGE + PROJECT PROGRESS SAME ROW
+        ===================================================== */
+
+        .progress-cards-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 17px;
+          grid-column: span 2;
+        }
+
+        .progress-cards-row .analytics-card {
+          min-width: 0;
+        }
+
+        .progress-cards-row .analytics-card.full-width {
+          grid-column: auto;
+        }
+
+        .analytics-card-title {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 18px;
+        }
+
+        .analytics-card .analytics-card-title h3 {
+          margin: 0;
+          color: #ffffff !important;
+          font-size: 16px;
+          font-weight: 800;
+          opacity: 1 !important;
+        }
+
+        .analytics-card-title span {
+          color: rgba(226,232,240,.65);
+          font-size: 11px;
+        }
+
+        .distribution-list {
+          display: grid;
+          gap: 13px;
+        }
+
+        .distribution-row {
+          display: grid;
+          grid-template-columns: 115px 1fr 30px;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .distribution-label {
+          color: rgba(226,232,240,.82);
+          font-size: 12px;
+          font-weight: 700;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .bar-track {
+          height: 7px;
+          overflow: hidden;
+          border-radius: 999px;
+          background: rgba(255,255,255,.075);
+        }
+
+        .bar-fill {
+          height: 100%;
+          border-radius: inherit;
+          background: linear-gradient(
+            90deg,
+            #60a5fa,
+            #38bdf8
+          );
+          transition: width .5s ease;
+        }
+
+        .bar-fill.priority {
+          background: linear-gradient(
+            90deg,
+            #f59e0b,
+            #fbbf24
+          );
+        }
+
+        .distribution-value {
+          text-align: right;
+          color: #fff;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .empty-analytics {
+          padding: 25px 0;
+          color: rgba(226,232,240,.65);
+          text-align: center;
+          font-size: 12px;
+        }
+
+        /* =====================================================
+           PROJECT PROGRESS
+        ===================================================== */
+
+        .project-progress {
+          display: grid;
+          gap: 14px;
+        }
+
+        .project-progress-row {
+          display: grid;
+          grid-template-columns: 140px 1fr 30px;
+          align-items: center;
+          gap: 11px;
+        }
+
+        .project-progress-label {
+          color: rgba(226,232,240,.82);
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .project-progress-value {
+          color: #fff;
+          text-align: right;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .progress-bar {
+          height: 8px;
+          overflow: hidden;
+          border-radius: 999px;
+          background: rgba(255,255,255,.075);
+        }
+
+        .progress-bar-fill {
+          height: 100%;
+          border-radius: inherit;
+          transition: width .5s ease;
+        }
+
+        .progress-pending {
+          background: #fbbf24;
+        }
+
+        .progress-validated {
+          background: #4ade80;
+        }
+
+        .progress-matched {
+          background: #a78bfa;
+        }
+
+        .progress-active {
+          background: #38bdf8;
+        }
+
+        .progress-completed {
+          background: #34d399;
+        }
+
+        /* =====================================================
+           CIRCULAR PROGRESS CHART
+        ===================================================== */
+
+        .progress-chart-layout {
+          display: grid;
+          grid-template-columns: 230px 1fr;
+          align-items: center;
+          gap: 20px;
+        }
+
+        .progress-chart-wrapper {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 5px;
+        }
+
+        .progress-chart {
+          position: relative;
+          width: 190px;
+          height: 190px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          box-shadow:
+            0 0 0 5px rgba(255,255,255,.08),
+            0 0 28px rgba(255,255,255,.25),
+            0 18px 45px rgba(0,0,0,.28);
+          transition: transform .3s ease;
+        }
+
+        .progress-chart:hover {
+          transform: scale(1.025);
+        }
+
+        .progress-chart::before {
+          content: "";
+          position: absolute;
+          width: 138px;
+          height: 138px;
+          border-radius: 50%;
+          background:
+            radial-gradient(
+              circle at 35% 30%,
+              rgba(255,255,255,.13),
+              rgba(7,18,31,.96)
+            );
+          box-shadow:
+            inset 0 0 25px rgba(255,255,255,.06),
+            0 0 22px rgba(255,255,255,.12);
+        }
+
+        .progress-chart-center {
+          position: relative;
+          z-index: 2;
+          text-align: center;
+        }
+
+        .progress-chart-total {
+          color: #fff;
+          font-size: 32px;
+          line-height: 1;
+          font-weight: 800;
+          letter-spacing: -1.5px;
+          text-shadow: 0 2px 15px rgba(255,255,255,.22);
+        }
+
+        .progress-chart-label {
+          margin-top: 7px;
+          color: rgba(226,232,240,.75);
+          font-size: 10px;
+          font-weight: 700;
+        }
+
+        .progress-legend {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 9px;
+        }
+
+        .progress-legend-item {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding: 8px 9px;
+          border: 1px solid rgba(255,255,255,.06);
+          border-radius: 11px;
+          background: rgba(255,255,255,.025);
+        }
+
+        .progress-legend-dot {
+          width: 9px;
+          height: 9px;
+          min-width: 9px;
+          border-radius: 50%;
+          box-shadow: 0 0 10px currentColor;
+        }
+
+        .progress-legend-content {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .progress-legend-label {
+          color: rgba(226,232,240,.82);
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .progress-legend-value {
+          color: #fff;
+          font-size: 14px;
+          font-weight: 800;
+        }
+
+        /* =====================================================
+           ECOSYSTEM
+        ===================================================== */
+
+        .ecosystem-grid {
+          display: grid;
+          grid-template-columns: repeat(2,1fr);
+          gap: 13px;
+        }
+
+        .ecosystem-item {
+          padding: 16px;
+          border: 1px solid rgba(255,255,255,.07);
+          border-radius: 14px;
+          background: rgba(255,255,255,.035);
+          transition: .2s ease;
+        }
+
+        .ecosystem-item:hover {
+          background: rgba(255,255,255,.055);
+          border-color: rgba(147,197,253,.15);
+        }
+
+        .ecosystem-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 12px;
+        }
+
+        .ecosystem-icon {
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 10px;
+          background: rgba(96,165,250,.09);
+          color: #bfdbfe;
+        }
+
+        .ecosystem-value {
+          font-size: 21px;
+          font-weight: 800;
+          color: #fff;
+        }
+
+        .ecosystem-title {
+          margin-bottom: 5px;
+          color: #fff;
+          font-size: 13px;
+          font-weight: 800;
+        }
+
+        .ecosystem-description {
+          color: rgba(226,232,240,.68);
+          font-size: 11px;
+          line-height: 1.65;
+        }
+
+        /* =====================================================
+           IMPACT
+        ===================================================== */
+
+        .impact-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+        }
+
+        .impact-card {
+          position: relative;
+          overflow: hidden;
+          min-height: 125px;
+          padding: 14px 16px;
+          border: 1px solid rgba(255,255,255,.09);
+          border-radius: 14px;
+          background:
+            linear-gradient(
+              145deg,
+              rgba(255,255,255,.10),
+              rgba(255,255,255,.04)
+            );
+          backdrop-filter: blur(18px);
+          box-shadow: 0 16px 40px rgba(0,0,0,.14);
+          transition: .22s ease;
+        }
+
+        .impact-card:hover {
+          transform: translateY(-3px);
+          border-color: rgba(147,197,253,.2);
+        }
+
+        .impact-icon {
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 9px;
+          border-radius: 9px;
+          background: rgba(96,165,250,.09);
+          color: #93c5fd;
+        }
+
+        .impact-value {
+          margin-bottom: 3px;
+          color: #fff;
+          font-size: 23px;
+          font-weight: 800;
+          letter-spacing: -.6px;
+        }
+
+        .impact-label {
+          color: rgba(226,232,240,.80);
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .impact-note {
+          margin-top: 5px;
+          color: rgba(226,232,240,.55);
+          font-size: 9px;
+          line-height: 1.45;
+        }
+
+        /* =====================================================
+           QUICK ACTIONS
+        ===================================================== */
+
+        .quick-actions {
+          display: grid;
+          grid-template-columns: repeat(3,1fr);
+          gap: 13px;
+        }
+
+        .quick-action {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 16px;
+          border: 1px solid rgba(255,255,255,.09);
+          border-radius: 15px;
+          background:
+            linear-gradient(
+              135deg,
+              rgba(255,255,255,.065),
+              rgba(255,255,255,.025)
+            );
+          color: #fff;
+          text-decoration: none;
+          transition: .22s ease;
+        }
+
+        .quick-action:hover {
+          transform: translateY(-4px);
+          background: rgba(255,255,255,.085);
+          border-color: rgba(147,197,253,.22);
+          box-shadow: 0 15px 35px rgba(0,0,0,.14);
+        }
+
+        .quick-action-icon {
+          width: 40px;
+          height: 40px;
+          min-width: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 11px;
+          background: rgba(96,165,250,.10);
+          color: #93c5fd;
+        }
+
+        .quick-action-content {
+          min-width: 0;
+        }
+
+        .quick-action-title {
+          margin-bottom: 4px;
+          font-size: 13px;
+          font-weight: 800;
+        }
+
+        .quick-action-description {
+          color: rgba(226,232,240,.68);
+          font-size: 11px;
+          line-height: 1.5;
+        }
+
+        .quick-action-arrow {
+          margin-left: auto;
+          flex-shrink: 0;
+          color: rgba(226,232,240,.4);
+          transition: .2s ease;
+        }
+
+        .quick-action:hover .quick-action-arrow {
+          color: #93c5fd;
+          transform: translateX(2px);
+        }
+
+        .loading-state {
+          min-height: 390px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          color: rgba(226,232,240,.65);
+        }
+
+        .loading-state p {
+          margin: 0;
+          font-size: 13px;
+        }
+
+        /* =====================================================
+           RESPONSIVE
+        ===================================================== */
+
+        @media (max-width: 1100px) {
+          .stats-grid {
+            grid-template-columns: repeat(2,1fr);
+          }
+
+          .main-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .quick-actions {
+            grid-template-columns: repeat(2,1fr);
+          }
+
+          .progress-chart-layout {
+            grid-template-columns: 1fr;
+            gap: 20px;
+          }
+
+          .progress-chart-wrapper {
+            justify-content: center;
+          }
+        }
+
+        @media (max-width: 900px) {
+          .progress-cards-row {
+            grid-template-columns: 1fr;
+            grid-column: span 1;
+          }
+        }
+
+        @media (max-width: 820px) {
+          .analytics-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .analytics-card.full-width {
+            grid-column: span 1;
+          }
+
+          .progress-cards-row {
+            grid-column: span 1;
+          }
+
+          .impact-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .progress-legend {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 650px) {
+          .admin-page {
+            padding: 28px 15px 55px;
+            background-attachment: scroll;
+          }
+
+          .dashboard-header {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .refresh-button {
+            width: 100%;
+          }
+
+          .stats-grid,
+          .quick-actions,
+          .ecosystem-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .dashboard-title {
+            font-size: 34px;
+          }
+
+          .dashboard-subtitle {
+            font-size: 14px;
+          }
+
+          .challenge-item {
+            grid-template-columns: 1fr;
+          }
+
+          .status-badge {
+            justify-self: start;
+          }
+
+          .progress-legend {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 450px) {
+          .distribution-row,
+          .project-progress-row {
+            grid-template-columns: 85px 1fr 25px;
+            gap: 7px;
+          }
+
+          .panel-header {
+            padding: 17px;
+          }
+
+          .review-body,
+          .analytics-card,
+          .impact-card {
+            padding: 17px;
+          }
+
+          .progress-chart {
+            width: 185px;
+            height: 185px;
+          }
+
+          .progress-chart::before {
+            width: 135px;
+            height: 135px;
+          }
+
+          .progress-chart-total {
+            font-size: 31px;
+          }
+        }
+      `}</style>
 
-  * {
-    box-sizing: border-box;
-  }
-
-  /* =====================================================
-     ADMIN PAGE BACKGROUND
-  ===================================================== */
-
-  .admin-page {
-    min-height: 100vh;
-
-    background:
-      linear-gradient(
-        rgba(8, 20, 35, 0.60),
-        rgba(8, 20, 35, 0.72)
-      ),
-      url(${monsoonBg});
-
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-
-    padding: 36px 5% 60px;
-
-    color: #f8fafc;
-    font-family: Inter, Arial, sans-serif;
-  }
-
-
-  .admin-container {
-    max-width: 1250px;
-    margin: 0 auto;
-  }
-
-
-  /* =====================================================
-     HEADER
-  ===================================================== */
-
-  .admin-header {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-
-    margin-bottom: 34px;
-    gap: 20px;
-  }
-
-
-  .admin-header-label {
-    color: #7db5ff;
-
-    font-size: 13px;
-    font-weight: 800;
-
-    letter-spacing: 2px;
-    text-transform: uppercase;
-
-    margin-bottom: 12px;
-  }
-
-
-  .admin-title {
-    margin: 0;
-
-    font-size: 40px;
-    line-height: 1.15;
-
-    color: #ffffff;
-
-    font-weight: 750;
-
-    text-shadow:
-      0 2px 10px
-      rgba(0, 0, 0, 0.25);
-  }
-
-
-  .admin-subtitle {
-    margin: 10px 0 0;
-
-    color: rgba(255, 255, 255, 0.75);
-
-    font-size: 17px;
-  }
-
-
-  /* =====================================================
-     REFRESH BUTTON
-  ===================================================== */
-
-  .refresh-btn {
-
-    border:
-      1px solid
-      rgba(255, 255, 255, 0.20);
-
-    background:
-      rgba(255, 255, 255, 0.12);
-
-    color: #ffffff;
-
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-
-    border-radius: 11px;
-
-    padding: 12px 18px;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 8px;
-
-    font-size: 14px;
-
-    font-weight: 650;
-
-    cursor: pointer;
-
-    transition: 0.2s ease;
-  }
-
-
-  .refresh-btn:hover:not(:disabled) {
-
-    background:
-      rgba(255, 255, 255, 0.20);
-
-    border-color:
-      rgba(255, 255, 255, 0.35);
-
-    transform: translateY(-1px);
-  }
-
-
-  .refresh-btn:disabled {
-
-    opacity: 0.6;
-
-    cursor: not-allowed;
-  }
-
-
-  .spin {
-
-    animation:
-      spin 0.8s linear infinite;
-  }
-
-
-  @keyframes spin {
-
-    from {
-
-      transform:
-        rotate(0deg);
-
-    }
-
-    to {
-
-      transform:
-        rotate(360deg);
-
-    }
-
-  }
-
-
-  /* =====================================================
-     ERROR
-  ===================================================== */
-
-  .error-box {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 10px;
-
-    padding: 14px 17px;
-
-    margin-bottom: 24px;
-
-    border:
-      1px solid
-      rgba(255, 130, 130, 0.35);
-
-    background:
-      rgba(120, 25, 25, 0.35);
-
-    backdrop-filter:
-      blur(10px);
-
-    -webkit-backdrop-filter:
-      blur(10px);
-
-    color: #fecaca;
-
-    border-radius: 12px;
-
-    font-size: 14px;
-  }
-
-
-  /* =====================================================
-     STATS
-  ===================================================== */
-
-  .stats-grid {
-
-    display: grid;
-
-    grid-template-columns:
-      repeat(4, 1fr);
-
-    gap: 18px;
-
-    margin-bottom: 30px;
-  }
-
-
-  .stat-card {
-
-    background:
-      rgba(255, 255, 255, 0.14);
-
-    border:
-      1px solid
-      rgba(255, 255, 255, 0.20);
-
-    backdrop-filter:
-      blur(5px);
-
-    -webkit-backdrop-filter:
-      blur(5px);
-
-    border-radius: 18px;
-
-    padding: 23px;
-
-    min-height: 130px;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 14px;
-
-    box-shadow:
-      0 8px 32px
-      rgba(0, 0, 0, 0.16);
-
-    transition:
-      0.2s ease;
-  }
-
-
-  .stat-card:hover {
-
-    background:
-      rgba(255, 255, 255, 0.18);
-
-    transform:
-      translateY(-2px);
-  }
-
-
-  .stat-icon {
-
-    width: 59px;
-
-    height: 59px;
-
-    border-radius: 15px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    flex-shrink: 0;
-
-    border:
-      1px solid
-      rgba(255, 255, 255, 0.15);
-  }
-
-
-  .stat-icon.blue {
-
-    background:
-      rgba(37, 99, 235, 0.20);
-
-    color: #60a5fa;
-  }
-
-
-  .stat-icon.orange {
-
-    background:
-      rgba(245, 158, 11, 0.16);
-
-    color: #fbbf24;
-  }
-
-
-  .stat-icon.purple {
-
-    background:
-      rgba(124, 58, 237, 0.18);
-
-    color: #c084fc;
-  }
-
-
-  .stat-icon.green {
-
-    background:
-      rgba(16, 185, 129, 0.17);
-
-    color: #5eead4;
-  }
-
-
-  .stat-info {
-
-    min-width: 0;
-  }
-
-
-  .stat-info span {
-
-    display: block;
-
-    color:
-      rgba(255, 255, 255, 0.72);
-
-    font-size: 14px;
-
-    margin-bottom: 8px;
-  }
-
-
-  .stat-info strong {
-
-    display: block;
-
-    color: #ffffff;
-
-    font-size: 35px;
-
-    line-height: 1;
-
-    font-weight: 750;
-  }
-
-
-  /* =====================================================
-     MAIN GRID
-  ===================================================== */
-
-  .dashboard-grid {
-
-    display: grid;
-
-    grid-template-columns:
-      0.95fr 1.35fr;
-
-    gap: 22px;
-
-    margin-bottom: 22px;
-  }
-
-
-  /* =====================================================
-     GLASS CARD
-  ===================================================== */
-
-  .dashboard-card {
-
-    background:
-      rgba(15, 23, 42, 0.52);
-
-    border:
-      1px solid
-      rgba(255, 255, 255, 0.16);
-
-    backdrop-filter:
-      blur(8px);
-
-    -webkit-backdrop-filter:
-      blur(8px);
-
-    border-radius: 18px;
-
-    padding: 24px;
-
-    box-shadow:
-      0 8px 32px
-      rgba(0, 0, 0, 0.18);
-  }
-
-
-  /* =====================================================
-     SECTION HEADERS
-  ===================================================== */
-
-  .section-heading,
-  .panel-header {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    gap: 15px;
-
-    margin-bottom: 22px;
-  }
-
-
-  .section-heading h2,
-  .panel-header h2 {
-
-    margin: 0;
-
-    color: #ffffff;
-
-    font-size: 19px;
-
-    font-weight: 700;
-  }
-
-
-  .section-heading p,
-  .panel-header p {
-
-    margin: 6px 0 0;
-
-    color:
-      rgba(255, 255, 255, 0.65);
-
-    font-size: 13px;
-  }
-
-
-  .view-all {
-
-    color: #8ab4ff;
-
-    text-decoration: none;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 5px;
-
-    font-size: 13px;
-
-    font-weight: 650;
-  }
-
-
-  .view-all:hover {
-
-    color: #bfdbfe;
-
-    text-decoration: underline;
-  }
-
-
-  /* =====================================================
-     STATUS
-  ===================================================== */
-
-  .status-row {
-
-    margin-bottom: 20px;
-  }
-
-
-  .status-row:last-child {
-
-    margin-bottom: 0;
-  }
-
-
-  .status-row-top {
-
-    display: flex;
-
-    justify-content: space-between;
-
-    margin-bottom: 8px;
-  }
-
-
-  .status-name {
-
-    color:
-      rgba(255, 255, 255, 0.72);
-
-    font-size: 14px;
-  }
-
-
-  .status-count {
-
-    color: #ffffff;
-
-    font-weight: 700;
-
-    font-size: 14px;
-  }
-
-
-  .progress-track {
-
-    width: 100%;
-
-    height: 8px;
-
-    border-radius: 20px;
-
-    background:
-      rgba(255, 255, 255, 0.12);
-
-    overflow: hidden;
-  }
-
-
-  .progress-bar {
-
-    height: 100%;
-
-    border-radius: 20px;
-
-    background: #38bdf8;
-  }
-
-
-  .progress-orange {
-
-    background: #fbbf24;
-  }
-
-
-  .progress-purple {
-
-    background: #a78bfa;
-  }
-
-
-  .progress-green {
-
-    background: #34d399;
-  }
-
-
-  /* =====================================================
-     RECENT ISSUES
-  ===================================================== */
-
-  .issues-list {
-
-    display: flex;
-
-    flex-direction: column;
-  }
-
-
-  .issue-item {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    gap: 15px;
-
-    padding: 14px 0;
-
-    border-bottom:
-      1px solid
-      rgba(255, 255, 255, 0.12);
-  }
-
-
-  .issue-item:first-child {
-
-    padding-top: 0;
-  }
-
-
-  .issue-item:last-child {
-
-    border-bottom: none;
-
-    padding-bottom: 0;
-  }
-
-
-  .issue-main {
-
-    min-width: 0;
-
-    flex: 1;
-  }
-
-
-  .issue-title {
-
-    color: #ffffff;
-
-    font-size: 14px;
-
-    font-weight: 650;
-
-    margin-bottom: 6px;
-
-    white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-  }
-
-
-  .issue-location {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 4px;
-
-    color:
-      rgba(255, 255, 255, 0.60);
-
-    font-size: 12px;
-  }
-
-
-  .issue-right {
-
-    text-align: right;
-
-    flex-shrink: 0;
-  }
-
-
-  /* =====================================================
-     STATUS BADGES
-  ===================================================== */
-
-  .status-badge {
-
-    display: inline-flex;
-
-    padding: 5px 9px;
-
-    border-radius: 20px;
-
-    font-size: 11px;
-
-    font-weight: 700;
-
-    border:
-      1px solid
-      rgba(255, 255, 255, 0.10);
-  }
-
-
-  .status-reported {
-
-    background:
-      rgba(245, 158, 11, 0.20);
-
-    color: #fde68a;
-  }
-
-
-  .status-verified {
-
-    background:
-      rgba(59, 130, 246, 0.20);
-
-    color: #93c5fd;
-  }
-
-
-  .status-assigned {
-
-    background:
-      rgba(124, 58, 237, 0.24);
-
-    color: #c4b5fd;
-  }
-
-
-  .status-progress {
-
-    background:
-      rgba(14, 165, 233, 0.20);
-
-    color: #7dd3fc;
-  }
-
-
-  .status-resolved {
-
-    background:
-      rgba(16, 185, 129, 0.20);
-
-    color: #6ee7b7;
-  }
-
-
-  .status-default {
-
-    background:
-      rgba(255, 255, 255, 0.12);
-
-    color:
-      rgba(255, 255, 255, 0.75);
-  }
-
-
-  .issue-date {
-
-    margin-top: 6px;
-
-    color:
-      rgba(255, 255, 255, 0.50);
-
-    font-size: 11px;
-  }
-
-
-  /* =====================================================
-     EMPTY STATE
-  ===================================================== */
-
-  .empty-state {
-
-    min-height: 100px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    color:
-      rgba(255, 255, 255, 0.65);
-
-    font-size: 14px;
-  }
-
-
-  /* =====================================================
-     QUICK ACTIONS
-  ===================================================== */
-
-  .quick-actions {
-
-    display: grid;
-
-    grid-template-columns:
-      repeat(3, 1fr);
-
-    gap: 15px;
-  }
-
-
-  .action-card {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 13px;
-
-    padding: 18px;
-
-    border:
-      1px solid
-      rgba(255, 255, 255, 0.15);
-
-    border-radius: 14px;
-
-    text-decoration: none;
-
-    background:
-      rgba(255, 255, 255, 0.08);
-
-    transition: 0.2s ease;
-  }
-
-
-  .action-card:hover {
-
-    transform:
-      translateY(-2px);
-
-    background:
-      rgba(255, 255, 255, 0.14);
-
-    box-shadow:
-      0 7px 20px
-      rgba(0, 0, 0, 0.18);
-  }
-
-
-  .action-icon {
-
-    width: 44px;
-
-    height: 44px;
-
-    border-radius: 12px;
-
-    background:
-      rgba(37, 99, 235, 0.20);
-
-    color: #60a5fa;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    flex-shrink: 0;
-  }
-
-
-  .action-text {
-
-    flex: 1;
-  }
-
-
-  .action-title {
-
-    color: #ffffff;
-
-    font-size: 14px;
-
-    font-weight: 700;
-  }
-
-
-  .action-description {
-
-    color:
-      rgba(255, 255, 255, 0.60);
-
-    font-size: 12px;
-
-    margin-top: 3px;
-  }
-
-
-  .action-arrow {
-
-    color:
-      rgba(255, 255, 255, 0.55);
-  }
-
-
-  /* =====================================================
-     ASSIGNMENT PANEL
-  ===================================================== */
-
-  .assignment-panel {
-
-    margin-top: 22px;
-  }
-
-
-  .assignment-summary {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    gap: 20px;
-  }
-
-
-  .assignment-left {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 14px;
-  }
-
-
-  .assignment-icon {
-
-    width: 48px;
-
-    height: 48px;
-
-    border-radius: 13px;
-
-    background:
-      rgba(245, 158, 11, 0.18);
-
-    color: #fbbf24;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-  }
-
-
-  .assignment-number {
-
-    color: #ffffff;
-
-    font-size: 27px;
-
-    font-weight: 750;
-  }
-
-
-  .assignment-label {
-
-    color:
-      rgba(255, 255, 255, 0.62);
-
-    font-size: 13px;
-
-    margin-top: 2px;
-  }
-
-
-  .assign-link {
-
-    background: #2563eb;
-
-    color: white;
-
-    text-decoration: none;
-
-    border-radius: 9px;
-
-    padding: 10px 15px;
-
-    font-size: 13px;
-
-    font-weight: 650;
-
-    transition: 0.2s ease;
-  }
-
-
-  .assign-link:hover {
-
-    background: #1d4ed8;
-
-    transform:
-      translateY(-1px);
-  }
-
-
-  /* =====================================================
-     RESPONSIVE
-  ===================================================== */
-
-  @media (max-width: 1050px) {
-
-    .stats-grid {
-
-      grid-template-columns:
-        repeat(2, 1fr);
-    }
-
-
-    .dashboard-grid {
-
-      grid-template-columns: 1fr;
-    }
-
-  }
-
-
-  @media (max-width: 700px) {
-
-    .admin-page {
-
-      padding:
-        25px 16px 45px;
-    }
-
-
-    .admin-header {
-
-      flex-direction: column;
-
-      align-items: stretch;
-    }
-
-
-    .admin-title {
-
-      font-size: 31px;
-    }
-
-
-    .refresh-btn {
-
-      justify-content: center;
-    }
-
-
-    .quick-actions {
-
-      grid-template-columns: 1fr;
-    }
-
-  }
-
-
-  @media (max-width: 500px) {
-
-    .stats-grid {
-
-      grid-template-columns: 1fr;
-    }
-
-
-    .assignment-summary {
-
-      flex-direction: column;
-
-      align-items: stretch;
-    }
-
-
-    .assign-link {
-
-      text-align: center;
-    }
-
-
-    .issue-item {
-
-      align-items: flex-start;
-    }
-
-
-    .issue-right {
-
-      max-width: 110px;
-    }
-
-  }
-
-`}</style>
       <main className="admin-page">
         <div className="admin-container">
 
-          {/* HEADER */}
+          {/* =================================================
+              HEADER
+          ================================================= */}
 
-          <header className="admin-header">
-            <div>
-              <div className="admin-header-label">
-Admin Dashboard              </div>
+          <header className="dashboard-header">
+            <div className="header-left">
 
-              <h1 className="admin-title">
-                Welcome,
+              <div className="eyebrow">
+                <span className="eyebrow-dot" />
+                Government Administration
+              </div>
+
+              <h1 className="dashboard-title">
+                Government Dashboard
               </h1>
 
-              <p className="admin-subtitle">
-                Monitor civic issues and track their resolution status.
+              <p className="dashboard-subtitle">
+                Monitor societal challenges, validate submissions,
+                coordinate institutions, track projects and measure
+                the real-world impact of innovation initiatives.
               </p>
+
             </div>
 
             <button
-              className="refresh-btn"
+              className="refresh-button"
               onClick={handleRefresh}
               disabled={refreshing}
             >
               <RefreshCw
-                size={17}
+                size={15}
                 className={refreshing ? "spin" : ""}
               />
 
               {refreshing
                 ? "Refreshing..."
-                : "Refresh"}
+                : "Refresh Data"}
             </button>
           </header>
 
-          {/* ERROR */}
-
           {error && (
             <div className="error-box">
-              <AlertCircle size={19} />
-              <span>{error}</span>
+              {error}
             </div>
           )}
 
-          {/* STATS */}
-
-          <section className="stats-grid">
-
-            <div className="stat-card">
-              <div className="stat-icon blue">
-                <ClipboardList size={27} />
-              </div>
-
-              <div className="stat-info">
-                <span>Total Issues</span>
-
-                <strong>
-                  {loading ? "—" : totalIssues}
-                </strong>
-              </div>
+          {loading ? (
+            <div className="panel loading-state">
+              <Loader2 size={30} className="spin" />
+              <p>Loading government dashboard...</p>
             </div>
+          ) : (
+            <>
 
-            <div className="stat-card">
-              <div className="stat-icon orange">
-                <Clock3 size={27} />
-              </div>
+              {/* =================================================
+                  SUMMARY
+              ================================================= */}
 
-              <div className="stat-info">
-                <span>Reported</span>
+              <section className="stats-grid">
 
-                <strong>
-                  {loading ? "—" : reportedIssues}
-                </strong>
-              </div>
-            </div>
+                {statCards.map((stat) => {
+                  const Icon = stat.icon;
 
-            <div className="stat-card">
-              <div className="stat-icon purple">
-                <Users size={27} />
-              </div>
-
-              <div className="stat-info">
-                <span>Assigned</span>
-
-                <strong>
-                  {loading ? "—" : assignedIssues}
-                </strong>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon green">
-                <CheckCircle2 size={27} />
-              </div>
-
-              <div className="stat-info">
-                <span>Resolved</span>
-
-                <strong>
-                  {loading ? "—" : resolvedIssues}
-                </strong>
-              </div>
-            </div>
-
-          </section>
-
-          {/* ISSUE STATUS + RECENT ISSUES */}
-
-          <section className="dashboard-grid">
-
-            {/* ISSUE STATUS */}
-
-            <section className="dashboard-card">
-
-              <div className="section-heading">
-                <div>
-                  <h2>Issue Status</h2>
-
-                  <p>
-                    Current status of all reported issues.
-                  </p>
-                </div>
-              </div>
-
-              {loading ? (
-                <div className="empty-state">
-                  <Loader2
-                    size={22}
-                    className="spin"
-                  />
-                </div>
-              ) : (
-                <>
-                  <div className="status-row">
-                    <div className="status-row-top">
-                      <span className="status-name">
-                        Reported
-                      </span>
-
-                      <span className="status-count">
-                        {reportedIssues}
-                      </span>
-                    </div>
-
-                    <div className="progress-track">
-                      <div
-                        className="progress-bar progress-orange"
-                        style={{
-                          width: `${
-                            totalIssues
-                              ? (reportedIssues /
-                                  totalIssues) *
-                                100
-                              : 0
-                          }%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="status-row">
-                    <div className="status-row-top">
-                      <span className="status-name">
-                        Assigned
-                      </span>
-
-                      <span className="status-count">
-                        {assignedIssues}
-                      </span>
-                    </div>
-
-                    <div className="progress-track">
-                      <div
-                        className="progress-bar progress-purple"
-                        style={{
-                          width: `${
-                            totalIssues
-                              ? (assignedIssues /
-                                  totalIssues) *
-                                100
-                              : 0
-                          }%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="status-row">
-                    <div className="status-row-top">
-                      <span className="status-name">
-                        In Progress
-                      </span>
-
-                      <span className="status-count">
-                        {inProgressIssues}
-                      </span>
-                    </div>
-
-                    <div className="progress-track">
-                      <div
-                        className="progress-bar"
-                        style={{
-                          width: `${
-                            totalIssues
-                              ? (inProgressIssues /
-                                  totalIssues) *
-                                100
-                              : 0
-                          }%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="status-row">
-                    <div className="status-row-top">
-                      <span className="status-name">
-                        Resolved
-                      </span>
-
-                      <span className="status-count">
-                        {resolvedIssues}
-                      </span>
-                    </div>
-
-                    <div className="progress-track">
-                      <div
-                        className="progress-bar progress-green"
-                        style={{
-                          width: `${
-                            totalIssues
-                              ? (resolvedIssues /
-                                  totalIssues) *
-                                100
-                              : 0
-                          }%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-            </section>
-
-            {/* RECENT ISSUES */}
-
-            <section className="dashboard-card">
-
-              <div className="panel-header">
-                <div>
-                  <h2>Recent Issues</h2>
-
-                  <p>
-                    Latest civic issues reported.
-                  </p>
-                </div>
-
-                <Link
-                  to="/admin/issues"
-                  className="view-all"
-                >
-                  View all
-                  <ArrowUpRight size={15} />
-                </Link>
-              </div>
-
-              {loading ? (
-                <div className="empty-state">
-                  <Loader2
-                    size={22}
-                    className="spin"
-                  />
-                </div>
-              ) : recentIssues.length === 0 ? (
-                <div className="empty-state">
-                  No issues reported yet.
-                </div>
-              ) : (
-                <div className="issues-list">
-
-                  {recentIssues.map((issue) => (
+                  return (
                     <div
-                      className="issue-item"
-                      key={
-                        issue._id ||
-                        issue.id
-                      }
+                      className={`stat-card ${stat.className}`}
+                      key={stat.label}
                     >
+                      <div className="stat-top">
 
-                      <div className="issue-main">
-
-                        <div className="issue-title">
-                          {issue.title ||
-                            issue.category ||
-                            issue.description ||
-                            "Civic Issue"}
+                        <div className="stat-icon">
+                          <Icon size={19} />
                         </div>
 
-                        <div className="issue-location">
-                          <MapPin size={13} />
-
-                          {getLocation(issue)}
-                        </div>
-
-                      </div>
-
-                      <div className="issue-right">
-
-                        <span
-                          className={`status-badge ${getStatusClass(
-                            issue.status
-                          )}`}
-                        >
-                          {getStatusLabel(
-                            issue.status
-                          )}
+                        <span className="stat-percent">
+                          {stat.percent}%
                         </span>
 
-                        <div className="issue-date">
-                          {formatDate(
-                            issue.createdAt ||
-                              issue.created_at
-                          )}
+                      </div>
+
+                      <div className="stat-value">
+                        {stat.value}
+                      </div>
+
+                      <div className="stat-label">
+                        {stat.label}
+                      </div>
+
+                    </div>
+                  );
+                })}
+
+              </section>
+
+              {/* =================================================
+                  REVIEW + RECENT CHALLENGES
+              ================================================= */}
+
+              <section className="main-grid">
+
+                <div className="panel">
+
+                  <div className="panel-header">
+
+                    <div className="panel-title-wrap">
+
+                      <div className="panel-icon">
+                        <ShieldCheck size={18} />
+                      </div>
+
+                      <div>
+                        <h2 className="panel-title">
+                          Government Review
+                        </h2>
+
+                        <p className="panel-description">
+                          Validate and manage submitted challenges
+                        </p>
+                      </div>
+
+                    </div>
+
+                    <Link
+                      to="/admin/review"
+                      className="view-link"
+                    >
+                      Open
+                      <ArrowUpRight size={13} />
+                    </Link>
+
+                  </div>
+
+                  <div className="review-body">
+
+                    <div className="review-highlight">
+
+                      <div className="review-highlight-icon">
+                        <Clock3 size={20} />
+                      </div>
+
+                      <div>
+                        <div className="review-number">
+                          {pendingReview}
+                        </div>
+
+                        <div className="review-text">
+                          Challenges awaiting government review
+                        </div>
+                      </div>
+
+                    </div>
+
+                    <div className="review-actions">
+
+                      <Link
+                        to="/admin/review"
+                        className="action-link"
+                      >
+                        <span className="action-left">
+                          <ShieldCheck size={15} />
+                          Review Challenges
+                        </span>
+
+                        <ChevronRight size={14} />
+                      </Link>
+
+                      <Link
+                        to="/admin/hei"
+                        className="action-link"
+                      >
+                        <span className="action-left">
+                          <GitMerge size={15} />
+                          HEI Matching
+                        </span>
+
+                        <ChevronRight size={14} />
+                      </Link>
+
+                      <Link
+                        to="/admin/projects"
+                        className="action-link"
+                      >
+                        <span className="action-left">
+                          <FolderKanban size={15} />
+                          Monitor Projects
+                        </span>
+
+                        <ChevronRight size={14} />
+                      </Link>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+                <div className="panel">
+
+                  <div className="panel-header">
+
+                    <div className="panel-title-wrap">
+
+                      <div className="panel-icon">
+                        <ClipboardList size={18} />
+                      </div>
+
+                      <div>
+                        <h2 className="panel-title">
+                          Recent Challenges
+                        </h2>
+
+                        <p className="panel-description">
+                          Latest submissions received
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                    <Link
+                      to="/admin/challenges"
+                      className="view-link"
+                    >
+                      View All
+                      <ArrowUpRight size={13} />
+                    </Link>
+
+                  </div>
+
+                  <div className="challenge-list">
+
+                    {recentChallenges.length === 0 ? (
+                      <div className="empty-analytics">
+                        No challenges available.
+                      </div>
+                    ) : (
+                      recentChallenges.map((issue, index) => (
+
+                        <div
+                          className="challenge-item"
+                          key={
+                            issue?._id ||
+                            issue?.id ||
+                            index
+                          }
+                        >
+
+                          <div>
+
+                            <div className="challenge-title">
+                              {getChallengeTitle(issue)}
+                            </div>
+
+                            <div className="challenge-meta">
+
+                              <span>
+                                <Layers3 size={10} />
+                                {formatValue(
+                                  getDomain(issue)
+                                )}
+                              </span>
+
+                              <span>
+                                <MapPin size={10} />
+                                {getLocation(issue)}
+                              </span>
+
+                              <span>
+                                {formatDate(
+                                  issue?.createdAt ||
+                                  issue?.created_at
+                                )}
+                              </span>
+
+                            </div>
+
+                          </div>
+
+                          <span
+                            className={`status-badge ${getStatusClass(
+                              issue?.status
+                            )}`}
+                          >
+                            {getStatusLabel(
+                              issue?.status
+                            )}
+                          </span>
+
+                        </div>
+
+                      ))
+                    )}
+
+                  </div>
+
+                </div>
+
+              </section>
+
+              {/* =================================================
+                  ANALYTICS
+              ================================================= */}
+
+              <section className="section">
+
+                <h2 className="section-heading">
+                  <BarChart3 size={20} />
+                  Analytics & Monitoring
+                </h2>
+
+                <div className="analytics-grid">
+
+                  <div className="analytics-card">
+
+                    <div className="analytics-card-title">
+                      <h3>Domain Distribution</h3>
+                      <span>Challenges</span>
+                    </div>
+
+                    {domainDistribution.length === 0 ? (
+                      <div className="empty-analytics">
+                        No domain data available.
+                      </div>
+                    ) : (
+                      <div className="distribution-list">
+
+                        {domainDistribution.map(
+                          ([domain, value]) => {
+
+                            const maxValue =
+                              domainDistribution[0]?.[1] || 1;
+
+                            const width =
+                              (value / maxValue) * 100;
+
+                            return (
+                              <div
+                                className="distribution-row"
+                                key={domain}
+                              >
+
+                                <span className="distribution-label">
+                                  {domain}
+                                </span>
+
+                                <div className="bar-track">
+                                  <div
+                                    className="bar-fill"
+                                    style={{
+                                      width: `${width}%`,
+                                    }}
+                                  />
+                                </div>
+
+                                <span className="distribution-value">
+                                  {value}
+                                </span>
+
+                              </div>
+                            );
+                          }
+                        )}
+
+                      </div>
+                    )}
+
+                  </div>
+
+                  <div className="analytics-card">
+
+                    <div className="analytics-card-title">
+                      <h3>Priority Distribution</h3>
+                      <span>Challenges</span>
+                    </div>
+
+                    {priorityDistribution.length === 0 ? (
+                      <div className="empty-analytics">
+                        No priority data available.
+                      </div>
+                    ) : (
+                      <div className="distribution-list">
+
+                        {priorityDistribution.map(
+                          ([priority, value]) => {
+
+                            const maxValue = Math.max(
+                              ...priorityDistribution.map(
+                                ([, count]) => count
+                              ),
+                              1
+                            );
+
+                            const width =
+                              (value / maxValue) * 100;
+
+                            return (
+                              <div
+                                className="distribution-row"
+                                key={priority}
+                              >
+
+                                <span className="distribution-label">
+                                  {priority}
+                                </span>
+
+                                <div className="bar-track">
+                                  <div
+                                    className="bar-fill priority"
+                                    style={{
+                                      width: `${width}%`,
+                                    }}
+                                  />
+                                </div>
+
+                                <span className="distribution-value">
+                                  {value}
+                                </span>
+
+                              </div>
+                            );
+                          }
+                        )}
+
+                      </div>
+                    )}
+
+                  </div>
+
+                  <div className="progress-cards-row">
+
+                    <div className="analytics-card">
+
+                      <div className="analytics-card-title">
+                        <h3>Challenge Progress</h3>
+                        <span>Overall lifecycle</span>
+                      </div>
+
+                      <div className="progress-chart-layout">
+
+                        <div className="progress-chart-wrapper">
+
+                          <div
+                            className="progress-chart"
+                            style={progressChartStyle}
+                            role="img"
+                            aria-label={`Challenge lifecycle progress showing ${totalChallenges} total challenges`}
+                          >
+
+                            <div className="progress-chart-center">
+
+                              <div className="progress-chart-total">
+                                {totalChallenges}
+                              </div>
+
+                              <div className="progress-chart-label">
+                                Total Challenges
+                              </div>
+
+                            </div>
+
+                          </div>
+
+                        </div>
+
+                        <div className="progress-legend">
+
+                          {progressChartData.map((item) => (
+
+                            <div
+                              className="progress-legend-item"
+                              key={item.label}
+                            >
+
+                              <span
+                                className="progress-legend-dot"
+                                style={{
+                                  background: item.color,
+                                  color: item.color,
+                                }}
+                              />
+
+                              <div className="progress-legend-content">
+
+                                <div className="progress-legend-label">
+                                  {item.label}
+                                </div>
+
+                              </div>
+
+                              <div className="progress-legend-value">
+                                {item.value}
+                              </div>
+
+                            </div>
+
+                          ))}
+
                         </div>
 
                       </div>
 
                     </div>
-                  ))}
 
-                </div>
-              )}
+                    <div className="analytics-card">
 
-            </section>
+                      <div className="analytics-card-title">
 
-          </section>
+                        <h3>Project Progress</h3>
 
-          {/* QUICK ACTIONS */}
+                        <span>
+                          Challenge lifecycle
+                        </span>
 
-          <section className="dashboard-card">
+                      </div>
 
-            <div className="section-heading">
-              <div>
-                <h2>Quick Actions</h2>
+                      <div className="project-progress">
 
-                <p>
-                  Quickly access admin management pages.
-                </p>
-              </div>
-            </div>
+                        {projectProgress.map((item) => (
 
-            <div className="quick-actions">
+                          <div
+                            className="project-progress-row"
+                            key={item.label}
+                          >
 
-              <Link
-                to="/admin/issues"
-                className="action-card"
-              >
-                <div className="action-icon">
-                  <ClipboardList size={22} />
-                </div>
+                            <span className="project-progress-label">
+                              {item.label}
+                            </span>
 
-                <div className="action-text">
-                  <div className="action-title">
-                    Manage Issues
+                            <div className="progress-bar">
+
+                              <div
+                                className={`progress-bar-fill ${item.className}`}
+                                style={{
+                                  width: `${percentage(
+                                    item.value
+                                  )}%`,
+                                }}
+                              />
+
+                            </div>
+
+                            <span className="project-progress-value">
+                              {item.value}
+                            </span>
+
+                          </div>
+
+                        ))}
+
+                      </div>
+
+                    </div>
+
                   </div>
 
-                  <div className="action-description">
-                    View and manage civic issues
+                  <div className="analytics-card full-width">
+
+                    <div className="analytics-card-title">
+
+                      <h3>
+                        Ecosystem Participation
+                      </h3>
+
+                      <span>
+                        HEI & Industry
+                      </span>
+
+                    </div>
+
+                    <div className="ecosystem-grid">
+
+                      <div className="ecosystem-item">
+
+                        <div className="ecosystem-top">
+
+                          <div className="ecosystem-icon">
+                            <Building2 size={17} />
+                          </div>
+
+                          <div className="ecosystem-value">
+                            {heiParticipation}
+                          </div>
+
+                        </div>
+
+                        <div className="ecosystem-title">
+                          HEI Participation
+                        </div>
+
+                        <div className="ecosystem-description">
+                          Higher Education Institutions
+                          participating in challenge matching,
+                          team formation and project execution.
+                        </div>
+
+                      </div>
+
+                      <div className="ecosystem-item">
+
+                        <div className="ecosystem-top">
+
+                          <div className="ecosystem-icon">
+                            <BriefcaseBusiness size={17} />
+                          </div>
+
+                          <div className="ecosystem-value">
+                            {industryEngagement}
+                          </div>
+
+                        </div>
+
+                        <div className="ecosystem-title">
+                          Industry Engagement
+                        </div>
+
+                        <div className="ecosystem-description">
+                          Industry organizations contributing
+                          expertise, resources and collaboration
+                          toward solution development.
+                        </div>
+
+                      </div>
+
+                    </div>
+
                   </div>
+
                 </div>
 
-                <ArrowUpRight
-                  size={18}
-                  className="action-arrow"
-                />
-              </Link>
+              </section>
 
-              <Link
-                to="/admin/officers"
-                className="action-card"
-              >
-                <div className="action-icon">
-                  <UserCog size={22} />
-                </div>
+              {/* =================================================
+                  IMPACT METRICS
+              ================================================= */}
 
-                <div className="action-text">
-                  <div className="action-title">
-                    Manage Officers
-                  </div>
+              <section className="section">
 
-                  <div className="action-description">
-                    Assign and manage officers
-                  </div>
-                </div>
-
-                <ArrowUpRight
-                  size={18}
-                  className="action-arrow"
-                />
-              </Link>
-
-              <Link
-                to="/admin/citizens"
-                className="action-card"
-              >
-                <div className="action-icon">
-                  <Users size={22} />
-                </div>
-
-                <div className="action-text">
-                  <div className="action-title">
-                    View Citizens
-                  </div>
-
-                  <div className="action-description">
-                    View registered citizens
-                  </div>
-                </div>
-
-                <ArrowUpRight
-                  size={18}
-                  className="action-arrow"
-                />
-              </Link>
-
-            </div>
-
-          </section>
-
-          {/* ISSUES AWAITING ASSIGNMENT */}
-
-          <section className="dashboard-card assignment-panel">
-
-            <div className="section-heading">
-
-              <div>
-                <h2>
-                  Issues Awaiting Assignment
+                <h2 className="section-heading">
+                  <TrendingUp size={20} />
+                  Impact Metrics
                 </h2>
 
-                <p>
-                  Issues that currently don't have an officer.
-                </p>
-              </div>
+                <div className="impact-grid">
 
-              <Link
-                to="/admin/issues"
-                className="view-all"
-              >
-                Manage
-                <ArrowUpRight size={15} />
-              </Link>
+                  <div className="impact-card">
 
-            </div>
+                    <div className="impact-icon">
+                      <Users size={18} />
+                    </div>
 
-            <div className="assignment-summary">
+                    <div className="impact-value">
+                      {beneficiaries.toLocaleString("en-IN")}
+                    </div>
 
-              <div className="assignment-left">
+                    <div className="impact-label">
+                      Beneficiaries
+                    </div>
 
-                <div className="assignment-icon">
-                  <UserPlus size={23} />
-                </div>
+                    <div className="impact-note">
+                      People impacted by deployed solutions
+                    </div>
 
-                <div>
-
-                  <div className="assignment-number">
-                    {loading
-                      ? "—"
-                      : awaitingAssignment}
                   </div>
 
-                  <div className="assignment-label">
-                    {awaitingAssignment === 1
-                      ? "issue needs officer assignment"
-                      : "issues need officer assignment"}
+                  <div className="impact-card">
+
+                    <div className="impact-icon">
+                      <CheckCircle2 size={18} />
+                    </div>
+
+                    <div className="impact-value">
+                      {solutionsDeployed.toLocaleString("en-IN")}
+                    </div>
+
+                    <div className="impact-label">
+                      Solutions Deployed
+                    </div>
+
+                    <div className="impact-note">
+                      Successfully implemented solutions
+                    </div>
+
+                  </div>
+
+                  <div className="impact-card">
+
+                    <div className="impact-icon">
+                      <Globe2 size={18} />
+                    </div>
+
+                    <div className="impact-value">
+                      {villagesCovered.toLocaleString("en-IN")}
+                    </div>
+
+                    <div className="impact-label">
+                      Villages Covered
+                    </div>
+
+                    <div className="impact-note">
+                      Communities reached by projects
+                    </div>
+
                   </div>
 
                 </div>
 
-              </div>
+              </section>
 
-              {awaitingAssignment > 0 && (
-                <Link
-                  to="/admin/issues"
-                  className="assign-link"
-                >
-                  Assign Officers
-                </Link>
-              )}
+              {/* =================================================
+                  GOVERNMENT ACTIONS
+              ================================================= */}
 
-            </div>
+              <section className="section">
 
-          </section>
+                <h2 className="section-heading">
+                  <Sparkles size={20} />
+                  Government Actions
+                </h2>
+
+                <div className="quick-actions">
+
+                  <Link
+                    to="/admin/challenges"
+                    className="quick-action"
+                  >
+                    <div className="quick-action-icon">
+                      <ClipboardList size={18} />
+                    </div>
+
+                    <div className="quick-action-content">
+
+                      <div className="quick-action-title">
+                        Challenge Management
+                      </div>
+
+                      <div className="quick-action-description">
+                        Manage submitted societal challenges
+                      </div>
+
+                    </div>
+
+                    <ChevronRight
+                      size={15}
+                      className="quick-action-arrow"
+                    />
+                  </Link>
+
+                  <Link
+                    to="/admin/review"
+                    className="quick-action"
+                  >
+                    <div className="quick-action-icon">
+                      <ShieldCheck size={18} />
+                    </div>
+
+                    <div className="quick-action-content">
+
+                      <div className="quick-action-title">
+                        Government Review
+                      </div>
+
+                      <div className="quick-action-description">
+                        Validate or reject challenges
+                      </div>
+
+                    </div>
+
+                    <ChevronRight
+                      size={15}
+                      className="quick-action-arrow"
+                    />
+                  </Link>
+
+                  <Link
+                    to="/admin/hei"
+                    className="quick-action"
+                  >
+                    <div className="quick-action-icon">
+                      <GitMerge size={18} />
+                    </div>
+
+                    <div className="quick-action-content">
+
+                      <div className="quick-action-title">
+                        HEI Matching
+                      </div>
+
+                      <div className="quick-action-description">
+                        Match challenges with institutions
+                      </div>
+
+                    </div>
+
+                    <ChevronRight
+                      size={15}
+                      className="quick-action-arrow"
+                    />
+                  </Link>
+
+                  <Link
+                    to="/admin/projects"
+                    className="quick-action"
+                  >
+                    <div className="quick-action-icon">
+                      <FolderKanban size={18} />
+                    </div>
+
+                    <div className="quick-action-content">
+
+                      <div className="quick-action-title">
+                        Project Monitoring
+                      </div>
+
+                      <div className="quick-action-description">
+                        Track active and completed projects
+                      </div>
+
+                    </div>
+
+                    <ChevronRight
+                      size={15}
+                      className="quick-action-arrow"
+                    />
+                  </Link>
+
+                  <Link
+                    to="/admin/officers"
+                    className="quick-action"
+                  >
+                    <div className="quick-action-icon">
+                      <UserCog size={18} />
+                    </div>
+
+                    <div className="quick-action-content">
+
+                      <div className="quick-action-title">
+                        Government Officers
+                      </div>
+
+                      <div className="quick-action-description">
+                        Manage government-side users
+                      </div>
+
+                    </div>
+
+                    <ChevronRight
+                      size={15}
+                      className="quick-action-arrow"
+                    />
+                  </Link>
+
+                  <Link
+                    to="/admin/impact"
+                    className="quick-action"
+                  >
+                    <div className="quick-action-icon">
+                      <BarChart3 size={18} />
+                    </div>
+
+                    <div className="quick-action-content">
+
+                      <div className="quick-action-title">
+                        Impact & Outcomes
+                      </div>
+
+                      <div className="quick-action-description">
+                        Monitor measurable social impact
+                      </div>
+
+                    </div>
+
+                    <ChevronRight
+                      size={15}
+                      className="quick-action-arrow"
+                    />
+                  </Link>
+
+                </div>
+
+              </section>
+
+            </>
+          )}
 
         </div>
       </main>
@@ -1892,4 +2763,3 @@ Admin Dashboard              </div>
 }
 
 export default AdminDashboard;
-
