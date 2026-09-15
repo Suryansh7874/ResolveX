@@ -195,8 +195,54 @@ const challengeSchema = new mongoose.Schema(
         enum: ["LOW", "MEDIUM", "HIGH"],
         default: null,
       },
+
     },
-  },
+      // Assignment details
+      assignedHEI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "HEI",
+        default: null
+      },
+
+      assignedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: null
+      },
+
+      assignedAt: {
+        type: Date,
+        default: null
+      },
+
+      // Acceptance details from the assigned HEI
+      heiAcceptance: {
+        status: {
+          type: String,
+          enum: ["PENDING", "ACCEPTED", "REJECTED"],
+          default: "PENDING"
+        },
+
+        respondedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          default: null
+        },
+
+        respondedAt: {
+          type: Date,
+          default: null
+        },
+
+        remarks: {
+          type: String,
+          trim: true,
+          default: null
+        },
+      }
+
+      },
+  
   {
     timestamps: true,
   }

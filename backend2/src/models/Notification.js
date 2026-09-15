@@ -22,9 +22,9 @@ const notificationSchema = new mongoose.Schema({
     type: {
         type: String,
         enum: [
-            "issue_created",
-            "status_updated",
-            "issue_resolved"
+            "challenge_created",
+            "challenge_updated",
+            "challenge_resolved"
         ],
         required: true
     },

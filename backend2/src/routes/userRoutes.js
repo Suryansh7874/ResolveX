@@ -11,13 +11,13 @@ const router = express.Router();
 
 
 // =====================================================
-// ADMIN CREATES GOVERNMENT / HEI / INDUSTRY ACCOUNTS
+// ADMIN Creates HEI / INDUSTRY ACCOUNTS
 // =====================================================
 
 router.post(
   "/create-managed-user",
   authMiddleware,
-  roleMiddleware("ADMIN"),
+  roleMiddleware("GOVERNMENT"),
   createManagedUser
 );
 

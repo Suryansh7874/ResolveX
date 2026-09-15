@@ -25,7 +25,7 @@ const sendPasswordResetOTP = async (email, otp) => {
 
         <p>You requested to reset your password.</p>
 
-        <p>Your OTP is:</p>
+        <p>Your OTP is:</p> 
 
         <h1 style="letter-spacing: 5px;">
           ${otp}

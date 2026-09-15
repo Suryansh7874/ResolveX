@@ -1,10 +1,9 @@
 const User = require("../models/User");
-const Department = require("../models/Department");
 const HEI = require("../models/HEI");
 
 
 // =====================================================
-// ADMIN CREATES MANAGED USER
+// GOVERNMENT/ADMIN CREATES MANAGED USER
 // =====================================================
 
 const createManagedUser = async (req, res) => {
@@ -15,7 +14,6 @@ const createManagedUser = async (req, res) => {
       phone,
       password,
       role,
-      departmentId,
       heiId,
     } = req.body;
 
@@ -37,7 +35,6 @@ const createManagedUser = async (req, res) => {
     // -------------------------------------------------
 
     const allowedRoles = [
-      "GOVERNMENT",
       "HEI_ADMIN",
       "FACULTY",
       "STUDENT",
@@ -48,7 +45,7 @@ const createManagedUser = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "Invalid role. Admin can create GOVERNMENT, HEI_ADMIN, FACULTY, STUDENT or INDUSTRY accounts",
+          "Invalid role. Admin/Government can create HEI_ADMIN, FACULTY, STUDENT or INDUSTRY accounts",
       });
     }
 
@@ -69,37 +66,7 @@ const createManagedUser = async (req, res) => {
     }
 
 
-    // -------------------------------------------------
-    // GOVERNMENT
-    // -------------------------------------------------
-
-    if (role === "GOVERNMENT") {
-
-      if (!departmentId) {
-        return res.status(400).json({
-          success: false,
-          message: "departmentId is required for GOVERNMENT account",
-        });
-      }
-
-      const departmentExist =
-        await Department.findById(departmentId);
-
-      if (!departmentExist) {
-        return res.status(404).json({
-          success: false,
-          message: "Department does not exist",
-        });
-      }
-
-      if (!departmentExist.isActive) {
-        return res.status(400).json({
-          success: false,
-          message: "This department is inactive",
-        });
-      }
-    }
-
+    
 
     // -------------------------------------------------
     // HEI ADMIN / FACULTY / STUDENT
@@ -147,10 +114,6 @@ const createManagedUser = async (req, res) => {
       password,
       role,
 
-      departmentId:
-        role === "GOVERNMENT"
-          ? departmentId
-          : null,
 
       heiId:
         role === "HEI_ADMIN" ||
@@ -174,7 +137,6 @@ const createManagedUser = async (req, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
-        departmentId: user.departmentId,
         heiId: user.heiId,
       },
     });

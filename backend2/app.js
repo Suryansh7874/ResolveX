@@ -3,8 +3,10 @@ const cors = require("cors");
 const helmet = require("helmet");
 
 const authRoutes = require("./src/routes/authRoutes");
-const departmentRoutes = require("./src/routes/departmentRoutes");
+
+// const departmentRoutes = require("./src/routes/departmentRoutes");
 // const issueRoutes = require("./src/routes/issueRoutes");
+
 const challengeRoutes = require("./src/routes/challengeRoutes");
 const userRoutes = require("./src/routes/userRoutes");
 const aiRoutes = require("./src/routes/aiRoutes");
@@ -14,18 +16,27 @@ const notificationRoutes = require("./src/routes/notificationRoutes");
 const heiMemberRoutes = require("./src/routes/heiMemberRoutes");
 const heiRoutes = require("./src/routes/heiRoutes");
 
+const projectTeamRoutes = require("./routes/projectTeamRoutes");
+const proposalRoutes = require("./routes/proposalRoutes");
+
 const app = express();
 
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+
 app.use("/api/auth", authRoutes);
 
-app.use("/api/departments", departmentRoutes);
+// app.use("/api/departments", departmentRoutes);
 // app.use("/api/issues", issueRoutes);
+
 app.use("/api/challenges", challengeRoutes);
 app.use("/api/hei", heiRoutes);
 app.use("/api/hei-members", heiMemberRoutes);
+
+
+app.use("/api/project-teams", projectTeamRoutes);
+app.use("/api/proposals", proposalRoutes);
 
 app.use("/api/ai", aiRoutes);
 

@@ -1,5 +1,7 @@
 const HEI = require("../models/HEI");
 
+const Challenge = require("../models/Challenge");
+
 // CREATE HEI
 const createHEI = async (req, res) => {
   try {
@@ -101,7 +103,195 @@ const getHEIs = async (req, res) => {
 };
 
 
+// ==========================================
+// GET ASSIGNED CHALLENGES FOR HEI
+// ==========================================
+const getAssignedChallenges = async (req, res) => {
+  try {
+    const heiId = req.user.heiId;
+
+    if (!heiId) {
+      return res.status(400).json({
+        success: false,
+        message: "HEI association not found",
+      });
+    }
+
+    const challenges = await Challenge.find({
+      assignedHEI: heiId,
+      status: "MATCHED",
+    })
+      .populate("submittedBy", "name email phone")
+      .populate("assignedHEI", "name type location")
+      .populate("assignedBy", "name email")
+      .sort({ assignedAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: challenges.length,
+      challenges,
+    });
+  } catch (error) {
+    console.error("Get assigned challenges error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch assigned challenges",
+      error: error.message,
+    });
+  }
+};
+
+
+// ==========================================
+// ACCEPT ASSIGNED CHALLENGE FOR HEI_ADMIN
+// ==========================================
+const acceptAssignedChallenge = async (req, res) => {
+  try {
+    const { challengeId } = req.params;
+    const { remarks } = req.body;
+
+    const challenge = await Challenge.findById(challengeId);
+
+    if (!challenge) {
+      return res.status(404).json({
+        success: false,
+        message: "Challenge not found",
+      });
+    }
+
+    // Make sure this challenge was assigned to the logged-in HEI
+    if (
+      !challenge.assignedHEI ||
+      challenge.assignedHEI.toString() !== req.user.heiId.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "This challenge is not assigned to your HEI",
+      });
+    }
+
+    // Only matched challenges can be accepted
+    if (challenge.status !== "MATCHED") {
+      return res.status(400).json({
+        success: false,
+        message: "Only assigned challenges can be accepted",
+      });
+    }
+
+    // Prevent duplicate response
+    if (challenge.heiAcceptance?.status !== "PENDING") {
+      return res.status(400).json({
+        success: false,
+        message: "This challenge has already been responded to",
+      });
+    }
+
+    challenge.heiAcceptance.status = "ACCEPTED";
+    challenge.heiAcceptance.respondedBy = req.user.id;
+    challenge.heiAcceptance.respondedAt = new Date();
+    challenge.heiAcceptance.remarks = remarks || null;
+
+    // Challenge now enters project stage
+    challenge.status = "IN_PROJECT";
+
+    await challenge.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Challenge accepted successfully",
+      challenge,
+    });
+  } catch (error) {
+    console.error("Accept assigned challenge error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to accept challenge",
+      error: error.message,
+    });
+  }
+};
+
+// ==========================================
+// REJECT ASSIGNED CHALLENGE FOR HEI_ADMIN
+// ==========================================
+const rejectAssignedChallenge = async (req, res) => {
+  try {
+    const { challengeId } = req.params;
+    const { remarks } = req.body;
+
+    if (!remarks || !remarks.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Remarks are required when rejecting a challenge",
+      });
+    }
+
+    const challenge = await Challenge.findById(challengeId);
+
+    if (!challenge) {
+      return res.status(404).json({
+        success: false,
+        message: "Challenge not found",
+      });
+    }
+
+    // Make sure this challenge was assigned to the logged-in HEI
+    if (
+      !challenge.assignedHEI ||
+      challenge.assignedHEI.toString() !== req.user.heiId.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "This challenge is not assigned to your HEI",
+      });
+    }
+
+    // Only matched challenges can be rejected
+    if (challenge.status !== "MATCHED") {
+      return res.status(400).json({
+        success: false,
+        message: "Only assigned challenges can be rejected",
+      });
+    }
+
+    // Prevent duplicate response
+    if (challenge.heiAcceptance?.status !== "PENDING") {
+      return res.status(400).json({
+        success: false,
+        message: "This challenge has already been responded to",
+      });
+    }
+
+    challenge.heiAcceptance.status = "REJECTED";
+    challenge.heiAcceptance.respondedBy = req.user.id;
+    challenge.heiAcceptance.respondedAt = new Date();
+    challenge.heiAcceptance.remarks = remarks.trim();
+
+    // Keep challenge MATCHED.
+    // Government can decide whether to reassign it.
+    await challenge.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Challenge assignment rejected",
+      challenge,
+    });
+  } catch (error) {
+    console.error("Reject assigned challenge error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to reject challenge assignment",
+      error: error.message,
+    });
+  }
+};
 module.exports = {
   createHEI,
   getHEIs,
+  getAssignedChallenges,
+  acceptAssignedChallenge,
+  rejectAssignedChallenge,
 };

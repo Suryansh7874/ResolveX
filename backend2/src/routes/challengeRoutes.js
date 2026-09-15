@@ -14,6 +14,7 @@ const {
     getChallengeById,
     matchChallengeWithHEIs,
     validateChallenge,
+    assignChallengeToHEI,
 } = require("../controllers/challengeController");
 
 const router = express.Router();
@@ -62,7 +63,7 @@ router.post(
 router.patch(
   "/:challengeId/validate",
   authMiddleware,
-  roleMiddleware("GOVERNMENT", "ADMIN"),
+  roleMiddleware("GOVERNMENT"),
   validateChallenge
 );
 
@@ -77,15 +78,6 @@ router.get(
 );
 
 
-// ==========================================
-// GET CHALLENGE BY ID
-// ==========================================
-
-router.get(
-    "/:challengeId",
-    authMiddleware,
-    getChallengeById
-);
 
 
 // ==========================================
@@ -115,6 +107,26 @@ router.delete(
     "/my/:challengeId",
     authMiddleware,
     deleteMyChallenge
+);
+
+// ==========================================
+// ASSIGN CHALLENGE TO HEI
+// ==========================================
+router.patch(
+  "/:challengeId/assign",
+  authMiddleware,
+  roleMiddleware("GOVERNMENT"),
+  assignChallengeToHEI
+);
+
+// ==========================================
+// GET CHALLENGE BY ID
+// ==========================================
+
+router.get(
+    "/:challengeId",
+    authMiddleware,
+    getChallengeById
 );
 
 

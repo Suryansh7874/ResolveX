@@ -3,160 +3,196 @@ const { classifyChallengeWithAI } = require("./aiControllers");
 const {
   findMatchingHEIs,
 } = require("../services/heiMatchingService");
-
+const HEI = require("../models/HEI");
 
 // ==========================================
 // CREATE CHALLENGE
 // ==========================================
 
 const createChallenge = async (req, res) => {
-    try {
-        const {
-            title,
-            description,
-            location
-        } = req.body;
+  try {
+    const {
+      title,
+      description,
+      location
+    } = req.body;
 
-        if (!title || !description || !location) {
-            return res.status(400).json({
-                success: false,
-                message: "Title, description and location are required"
-            });
-        }
-
-        let parsedLocation;
-
-        try {
-            parsedLocation = JSON.parse(location);
-        } catch (error) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid location format"
-            });
-        }
-
-        const { latitude, longitude } = parsedLocation;
-
-        if (
-            typeof latitude !== "number" ||
-            typeof longitude !== "number" ||
-            latitude < -90 ||
-            latitude > 90 ||
-            longitude < -180 ||
-            longitude > 180
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid location coordinates"
-            });
-        }
-
-
-        // ==========================================
-        // IMAGE VALIDATION
-        // ==========================================
-
-        if (!req.files || !req.files.image) {
-            return res.status(400).json({
-                success: false,
-                message: "Challenge image is required"
-            });
-        }
-
-
-        // ==========================================
-        // PREPARE MEDIA
-        // ==========================================
-
-        const media = [];
-
-        if (req.files.image) {
-            media.push({
-                type: "image",
-                url: `/uploads/${req.files.image[0].filename}`
-            });
-        }
-
-        if (req.files.video) {
-            media.push({
-                type: "video",
-                url: `/uploads/${req.files.video[0].filename}`
-            });
-        }
-
-
-        // ==========================================
-        // AI ANALYSIS
-        // ==========================================
-
-        const classification = await classifyChallengeWithAI(
-            title,
-            description
-        );
-
-
-        // ==========================================
-        // CREATE CHALLENGE
-        // ==========================================
-
-        const challenge = await Challenge.create({
-            submittedBy: req.user.userId,
-
-            title,
-
-            description,
-
-            domain: classification.domain,
-
-            location: {
-                type: "Point",
-                coordinates: [longitude, latitude]
-            },
-
-            media,
-
-            priority: classification.priority,
-
-            aiAnalysis: {
-                summary: classification.summary,
-
-                subDomain: classification.subDomain,
-
-                requiredExpertise:
-                    classification.requiredExpertise,
-
-                technologies:
-                    classification.technologies,
-
-                keywords:
-                    classification.keywords,
-
-                impactLevel:
-                    classification.impactLevel,
-
-                innovationPotential:
-                    classification.innovationPotential
-            }
-        });
-
-
-        return res.status(201).json({
-            success: true,
-            message: "Challenge created successfully",
-            challenge
-        });
-
-    } catch (error) {
-
-        console.error("Create challenge error:", error);
-
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
+    if (!title || !description || !location) {
+      return res.status(400).json({
+        success: false,
+        message: "Title, description and location are required"
+      });
     }
-};
 
+    let parsedLocation;
+
+    try {
+      parsedLocation = JSON.parse(location);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid location format"
+      });
+    }
+
+    const { latitude, longitude } = parsedLocation;
+
+    if (
+      typeof latitude !== "number" ||
+      typeof longitude !== "number" ||
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid location coordinates"
+      });
+    }
+
+
+    // ==========================================
+    // IMAGE VALIDATION
+    // ==========================================
+
+    if (!req.files || !req.files.image) {
+      return res.status(400).json({
+        success: false,
+        message: "Challenge image is required"
+      });
+    }
+
+
+    // ==========================================
+    // PREPARE MEDIA
+    // ==========================================
+
+    const media = [];
+
+    if (req.files.image) {
+      media.push({
+        type: "image",
+        url: `/uploads/${req.files.image[0].filename}`
+      });
+    }
+
+    if (req.files.video) {
+      media.push({
+        type: "video",
+        url: `/uploads/${req.files.video[0].filename}`
+      });
+    }
+
+
+    // ==========================================
+    // AI ANALYSIS
+    // ==========================================
+
+    const classification = await classifyChallengeWithAI(
+      title,
+      description
+    );
+
+
+    // ==========================================
+    // AUTOMATIC DUPLICATE CHECK
+    // ==========================================
+
+    const point = {
+      type: "Point",
+      coordinates: [
+        longitude,
+        latitude
+      ]
+    };
+
+    const potentialDuplicates = await Challenge.find({
+      domain: classification.domain,
+
+      location: {
+        $near: {
+          $geometry: point,
+          $maxDistance: 50
+        }
+      }
+    }).limit(10);
+
+
+    if (potentialDuplicates.length > 0) {
+      return res.status(409).json({
+        success: false,
+        duplicate: true,
+        message: "A potential duplicate challenge already exists nearby",
+        potentialDuplicates
+      });
+    }
+
+
+    // ==========================================
+    // CREATE CHALLENGE
+    // ==========================================
+
+    const challenge = await Challenge.create({
+      submittedBy: req.user.userId,
+
+      title,
+
+      description,
+
+      domain: classification.domain,
+
+      location: {
+        type: "Point",
+        coordinates: [
+          longitude,
+          latitude
+        ]
+      },
+
+      media,
+
+      priority: classification.priority,
+
+      aiAnalysis: {
+        summary: classification.summary,
+
+        subDomain: classification.subDomain,
+
+        requiredExpertise:
+          classification.requiredExpertise,
+
+        technologies:
+          classification.technologies,
+
+        keywords:
+          classification.keywords,
+
+        impactLevel:
+          classification.impactLevel,
+
+        innovationPotential:
+          classification.innovationPotential
+      }
+    });
+
+
+    return res.status(201).json({
+      success: true,
+      message: "Challenge created successfully",
+      challenge
+    });
+
+  } catch (error) {
+
+    console.error("Create challenge error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
 
 
 // ==========================================
@@ -164,52 +200,51 @@ const createChallenge = async (req, res) => {
 // ==========================================
 
 const getChallenges = async (req, res) => {
-    try {
+  try {
 
-        const {
-            domain,
-            status,
-            priority
-        } = req.query;
+    const {
+      domain,
+      status,
+      priority
+    } = req.query;
 
-        const filter = {};
+    const filter = {};
 
-        if (domain) {
-            filter.domain = domain;
-        }
-
-        if (status) {
-            filter.status = status;
-        }
-
-        if (priority) {
-            filter.priority = priority;
-        }
-
-
-        const challenges = await Challenge.find(filter)
-            .populate(
-                "submittedBy",
-                "name email phone role"
-            )
-            .sort({ createdAt: -1 });
-
-
-        return res.status(200).json({
-            success: true,
-            count: challenges.length,
-            challenges
-        });
-
-    } catch (error) {
-
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
+    if (domain) {
+      filter.domain = domain;
     }
-};
 
+    if (status) {
+      filter.status = status;
+    }
+
+    if (priority) {
+      filter.priority = priority;
+    }
+
+
+    const challenges = await Challenge.find(filter)
+      .populate(
+        "submittedBy",
+        "name email phone role"
+      )
+      .sort({ createdAt: -1 });
+
+
+    return res.status(200).json({
+      success: true,
+      count: challenges.length,
+      challenges
+    });
+
+  } catch (error) {
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
 
 
 // ==========================================
@@ -217,29 +252,28 @@ const getChallenges = async (req, res) => {
 // ==========================================
 
 const getMyChallenges = async (req, res) => {
-    try {
+  try {
 
-        const challenges = await Challenge.find({
-            submittedBy: req.user.userId
-        })
-            .sort({ createdAt: -1 });
+    const challenges = await Challenge.find({
+      submittedBy: req.user.userId
+    })
+      .sort({ createdAt: -1 });
 
 
-        return res.status(200).json({
-            success: true,
-            count: challenges.length,
-            challenges
-        });
+    return res.status(200).json({
+      success: true,
+      count: challenges.length,
+      challenges
+    });
 
-    } catch (error) {
+  } catch (error) {
 
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
 };
-
 
 
 // ==========================================
@@ -247,40 +281,39 @@ const getMyChallenges = async (req, res) => {
 // ==========================================
 
 const getChallengeById = async (req, res) => {
-    try {
+  try {
 
-        const { challengeId } = req.params;
+    const { challengeId } = req.params;
 
-        const challenge = await Challenge.findById(
-            challengeId
-        ).populate(
-            "submittedBy",
-            "name email phone role"
-        );
-
-
-        if (!challenge) {
-            return res.status(404).json({
-                success: false,
-                message: "Challenge not found"
-            });
-        }
+    const challenge = await Challenge.findById(
+      challengeId
+    ).populate(
+      "submittedBy",
+      "name email phone role"
+    );
 
 
-        return res.status(200).json({
-            success: true,
-            challenge
-        });
-
-    } catch (error) {
-
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
+    if (!challenge) {
+      return res.status(404).json({
+        success: false,
+        message: "Challenge not found"
+      });
     }
-};
 
+
+    return res.status(200).json({
+      success: true,
+      challenge
+    });
+
+  } catch (error) {
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
 
 
 // ==========================================
@@ -288,75 +321,74 @@ const getChallengeById = async (req, res) => {
 // ==========================================
 
 const checkDuplicateChallenge = async (req, res) => {
-    try {
+  try {
 
-        const {
-            domain,
-            location
-        } = req.body;
-
-
-        if (
-            !domain ||
-            !location ||
-            typeof location.latitude !== "number" ||
-            typeof location.longitude !== "number"
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: "Domain and valid location are required"
-            });
-        }
+    const {
+      domain,
+      location
+    } = req.body;
 
 
-        const point = {
-            type: "Point",
-            coordinates: [
-                location.longitude,
-                location.latitude
-            ]
-        };
-
-
-        const potentialDuplicates = await Challenge.find({
-            domain,
-
-            location: {
-                $near: {
-                    $geometry: point,
-                    $maxDistance: 50
-                }
-            }
-        })
-            .limit(10);
-
-
-        if (potentialDuplicates.length === 0) {
-
-            return res.status(200).json({
-                success: true,
-                duplicate: false,
-                message: "No potential duplicate challenge found"
-            });
-        }
-
-
-        return res.status(200).json({
-            success: true,
-            duplicate: true,
-            message: "Potential duplicate challenge found",
-            potentialDuplicates
-        });
-
-    } catch (error) {
-
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
+    if (
+      !domain ||
+      !location ||
+      typeof location.latitude !== "number" ||
+      typeof location.longitude !== "number"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Domain and valid location are required"
+      });
     }
-};
 
+
+    const point = {
+      type: "Point",
+      coordinates: [
+        location.longitude,
+        location.latitude
+      ]
+    };
+
+
+    const potentialDuplicates = await Challenge.find({
+      domain,
+
+      location: {
+        $near: {
+          $geometry: point,
+          $maxDistance: 50
+        }
+      }
+    })
+      .limit(10);
+
+
+    if (potentialDuplicates.length === 0) {
+
+      return res.status(200).json({
+        success: true,
+        duplicate: false,
+        message: "No potential duplicate challenge found"
+      });
+    }
+
+
+    return res.status(200).json({
+      success: true,
+      duplicate: true,
+      message: "Potential duplicate challenge found",
+      potentialDuplicates
+    });
+
+  } catch (error) {
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
 
 
 // ==========================================
@@ -364,66 +396,62 @@ const checkDuplicateChallenge = async (req, res) => {
 // ==========================================
 
 const supportChallenge = async (req, res) => {
-    try {
+  try {
 
-        const { challengeId } = req.params;
+    const { challengeId } = req.params;
 
-        const userId = req.user.userId;
-
-
-        const challenge = await Challenge.findById(
-            challengeId
-        );
+    const userId = req.user.userId;
 
 
-        if (!challenge) {
-            return res.status(404).json({
-                success: false,
-                message: "Challenge not found"
-            });
-        }
+    const challenge = await Challenge.findById(
+      challengeId
+    );
 
 
-        // Check whether user already supported it
-
-        const alreadySupported =
-            challenge.supportedBy.some(
-                id => id.toString() === userId.toString()
-            );
-
-
-        if (alreadySupported) {
-
-            return res.status(400).json({
-                success: false,
-                message: "You have already supported this challenge"
-            });
-        }
-
-
-        challenge.supportedBy.push(userId);
-
-
-        await challenge.save();
-
-
-        return res.status(200).json({
-            success: true,
-            message: "Challenge supported successfully",
-            supportCount:
-                challenge.supportedBy.length,
-            challenge
-        });
-
-    } catch (error) {
-
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
+    if (!challenge) {
+      return res.status(404).json({
+        success: false,
+        message: "Challenge not found"
+      });
     }
-};
 
+
+    const alreadySupported =
+      challenge.supportedBy.some(
+        id => id.toString() === userId.toString()
+      );
+
+
+    if (alreadySupported) {
+
+      return res.status(400).json({
+        success: false,
+        message: "You have already supported this challenge"
+      });
+    }
+
+
+    challenge.supportedBy.push(userId);
+
+    await challenge.save();
+
+
+    return res.status(200).json({
+      success: true,
+      message: "Challenge supported successfully",
+      supportCount:
+        challenge.supportedBy.length,
+      challenge
+    });
+
+  } catch (error) {
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
 
 
 // ==========================================
@@ -431,42 +459,46 @@ const supportChallenge = async (req, res) => {
 // ==========================================
 
 const deleteMyChallenge = async (req, res) => {
-    try {
+  try {
 
-        const { challengeId } = req.params;
+    const { challengeId } = req.params;
 
-        const challenge =
-            await Challenge.findOneAndDelete({
-                _id: challengeId,
-                submittedBy: req.user.userId
-            });
-
-
-        if (!challenge) {
-
-            return res.status(404).json({
-                success: false,
-                message:
-                    "Challenge not found or you are not authorized"
-            });
-        }
+    const challenge =
+      await Challenge.findOneAndDelete({
+        _id: challengeId,
+        submittedBy: req.user.userId
+      });
 
 
-        return res.status(200).json({
-            success: true,
-            message: "Challenge deleted successfully"
-        });
+    if (!challenge) {
 
-    } catch (error) {
-
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
+      return res.status(404).json({
+        success: false,
+        message:
+          "Challenge not found or you are not authorized"
+      });
     }
+
+
+    return res.status(200).json({
+      success: true,
+      message: "Challenge deleted successfully"
+    });
+
+  } catch (error) {
+
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
 };
 
+
+// ==========================================
 // FIND MATCHING HEIs
+// ==========================================
+
 const matchChallengeWithHEIs = async (req, res) => {
   try {
     const { challengeId } = req.params;
@@ -504,7 +536,11 @@ const matchChallengeWithHEIs = async (req, res) => {
   }
 };
 
+
+// ==========================================
 // VALIDATE / REJECT CHALLENGE
+// ==========================================
+
 const validateChallenge = async (req, res) => {
   try {
     const { challengeId } = req.params;
@@ -526,8 +562,6 @@ const validateChallenge = async (req, res) => {
       });
     }
 
-    // A challenge that is already part of a project
-    // should not be validated/rejected again.
     if (
       ["IN_PROJECT", "RESOLVED"].includes(challenge.status)
     ) {
@@ -568,7 +602,9 @@ const validateChallenge = async (req, res) => {
         : "Challenge rejected successfully",
       challenge,
     });
+
   } catch (error) {
+
     console.error("Challenge validation error:", error);
 
     return res.status(500).json({
@@ -579,15 +615,113 @@ const validateChallenge = async (req, res) => {
   }
 };
 
+// ==========================================
+// ASSIGN CHALLENGE TO HEI
+// ==========================================
+const assignChallengeToHEI = async (req, res) => {
+  try {
+    const { challengeId } = req.params;
+    const { heiId } = req.body;
+
+    if (!heiId) {
+      return res.status(400).json({
+        success: false,
+        message: "heiId is required",
+      });
+    }
+
+    // Find challenge
+    const challenge = await Challenge.findById(challengeId);
+
+    if (!challenge) {
+      return res.status(404).json({
+        success: false,
+        message: "Challenge not found",
+      });
+    }
+
+    // Challenge must be validated first and rejected challenges can be reassigned
+    const canAssign =
+        challenge.status === "VALIDATED" ||
+        (
+            challenge.status === "MATCHED" &&
+            challenge.heiAcceptance?.status === "REJECTED"
+        );
+
+        if (!canAssign) {
+        return res.status(400).json({
+            success: false,
+            message:
+            "Only validated challenges or rejected HEI assignments can be reassigned",
+        });
+        }
+
+    // Find HEI
+    const hei = await HEI.findById(heiId);
+
+    if (!hei) {
+      return res.status(404).json({
+        success: false,
+        message: "HEI not found",
+      });
+    }
+
+    // HEI must be active
+    if (!hei.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: "This HEI is not active",
+      });
+    }
+
+    // Assign HEI
+    challenge.assignedHEI = hei._id;
+    challenge.assignedBy = req.user.id;
+    challenge.assignedAt = new Date();
+
+    // HEI needs to respond
+    challenge.heiAcceptance = {
+      status: "PENDING",
+      respondedBy: null,
+      respondedAt: null,
+      remarks: null,
+    };
+
+    // Challenge is now matched
+    challenge.status = "MATCHED";
+
+    await challenge.save();
+
+    const populatedChallenge = await Challenge.findById(challenge._id)
+      .populate("assignedHEI")
+      .populate("assignedBy", "name email");
+
+    return res.status(200).json({
+      success: true,
+      message: "Challenge assigned to HEI successfully",
+      challenge: populatedChallenge,
+    });
+  } catch (error) {
+    console.error("Assign challenge error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to assign challenge to HEI",
+      error: error.message,
+    });
+  }
+};
+
 
 module.exports = {
-    createChallenge,
-    getChallenges,
-    checkDuplicateChallenge,
-    supportChallenge,
-    deleteMyChallenge,
-    getMyChallenges,
-    getChallengeById,
-    matchChallengeWithHEIs,
-    validateChallenge,
+  createChallenge,
+  getChallenges,
+  checkDuplicateChallenge,
+  supportChallenge,
+  deleteMyChallenge,
+  getMyChallenges,
+  getChallengeById,
+  matchChallengeWithHEIs,
+  validateChallenge,
+  assignChallengeToHEI,
 };

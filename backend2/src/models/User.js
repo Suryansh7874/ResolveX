@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["CITIZEN", "GOVERNMENT", "HEI_ADMIN", "FACULTY", "STUDENT", "INDUSTRY", "ADMIN"],
+      enum: ["CITIZEN", "GOVERNMENT", "HEI_ADMIN", "FACULTY", "STUDENT", "INDUSTRY"],
       default: "CITIZEN",
     },
 
@@ -39,11 +39,6 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
     
-    departmentId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Department",
-      default: null,
-    },
 
     digiLockerId: {
       type: String,

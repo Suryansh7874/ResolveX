@@ -8,7 +8,6 @@ const registerHEIMember = async (req, res) => {
     const {
       userId,
       memberType,
-      department,
       designation,
       expertise,
       researchAreas,
@@ -92,7 +91,6 @@ const registerHEIMember = async (req, res) => {
       userId,
       heiId,
       memberType,
-      department:department||null,
       designation:designation||null,
       expertise:expertise||[],
       researchAreas:researchAreas||[],

@@ -24,7 +24,7 @@ router.get("/me", authMiddleware, getMe);
 router.get(
   "/admin-test",
   authMiddleware,
-  roleMiddleware("ADMIN"),
+  roleMiddleware("GOVERNMENT"),
   adminTest
 );
 
