@@ -1,9 +1,9 @@
-Resolvex 
+ResolveX  🚀
 Create a professional, competition-ready PowerPoint presentation for the Smart India Hackathon (SIH) based STRICTLY on the provided official SIH Problem Statement.
 
 ## PROJECT
 
-Project Name: ResolveX
+Project Name: ResolveX 🚀
 
 Problem Statement Theme:
 Societal Innovation Collaboration Portal for Jharkhand
