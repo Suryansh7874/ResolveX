@@ -11,6 +11,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import ChallengeDetails from "./pages/ChallengeDetails";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
@@ -158,6 +159,10 @@ function App() {
         <Route
           path="*"
           element={<Navigate to="/" replace />}
+        />
+        <Route
+           path="/challenges/:id" 
+           element={<ChallengeDetails />}
         />
 
       </Routes>

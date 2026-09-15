@@ -11,15 +11,19 @@ import {
   MicOff,
   Send,
   X,
+  Sparkles,
+  FileText,
 } from "lucide-react";
 
 function ReportIssue() {
   const navigate = useNavigate();
 
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
+
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
-
-  const [description, setDescription] = useState("");
 
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(true);
@@ -172,7 +176,6 @@ function ReportIssue() {
 
     if (!file) return;
 
-    // Only allow images
     if (!file.type.startsWith("image/")) {
       setError("Please select a valid image file.");
       return;
@@ -225,7 +228,7 @@ function ReportIssue() {
   };
 
   // --------------------------------------------------
-  // SUBMIT ISSUE
+  // SUBMIT CHALLENGE
   // --------------------------------------------------
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -233,19 +236,27 @@ function ReportIssue() {
     setError("");
     setMessage("");
 
-    // Check image
-    if (!image) {
-      setError("Please upload an image of the issue.");
+    // Validate title
+    if (!title.trim()) {
+      setError("Please enter a title for the challenge.");
       return;
     }
 
-    // Check description
+    // Validate description
     if (!description.trim()) {
-      setError("Please describe the issue.");
+      setError("Please describe the societal challenge.");
       return;
     }
 
-    // Check location
+    // Validate image
+    if (!image) {
+      setError(
+        "Please upload an image related to the challenge."
+      );
+      return;
+    }
+
+    // Validate location
     if (
       location.latitude === null ||
       location.longitude === null
@@ -269,31 +280,13 @@ function ReportIssue() {
     try {
       const formData = new FormData();
 
-      // -----------------------------------------------
-      // TITLE
-      // Backend requires title.
-      // We generate a short title from the description.
-      // -----------------------------------------------
-      const title =
-        description.trim().length > 60
-          ? description.trim().substring(0, 60)
-          : description.trim();
+      formData.append("title", title.trim());
 
-      formData.append("title", title);
-
-      // -----------------------------------------------
-      // DESCRIPTION
-      // -----------------------------------------------
       formData.append(
         "description",
         description.trim()
       );
 
-      // -----------------------------------------------
-      // LOCATION
-      // Backend expects:
-      // JSON.parse(location)
-      // -----------------------------------------------
       formData.append(
         "location",
         JSON.stringify({
@@ -302,24 +295,20 @@ function ReportIssue() {
         })
       );
 
-      // -----------------------------------------------
-      // IMAGE
-      // Backend expects req.files.image
-      // -----------------------------------------------
       formData.append("image", image);
 
-      console.log("Submitting issue...");
-      console.log("Title:", title);
+      // Send category only if selected.
+      if (category) {
+        formData.append("category", category);
+      }
+
+      console.log("Submitting ResolveX challenge...");
+      console.log("Title:", title.trim());
+      console.log("Category:", category);
       console.log("Description:", description.trim());
-      console.log("Location:", {
-        latitude: location.latitude,
-        longitude: location.longitude,
-      });
+      console.log("Location:", location);
       console.log("Image:", image.name);
 
-      // -----------------------------------------------
-      // API REQUEST
-      // -----------------------------------------------
       const response = await fetch(
         "http://localhost:5000/api/issues",
         {
@@ -331,7 +320,6 @@ function ReportIssue() {
         }
       );
 
-      // Read response safely
       const responseText = await response.text();
 
       let data = null;
@@ -351,43 +339,39 @@ function ReportIssue() {
         }
       }
 
-      // -----------------------------------------------
-      // HANDLE BACKEND ERROR
-      // -----------------------------------------------
       if (!response.ok) {
         throw new Error(
           data?.message ||
-            `Failed to submit issue. Status: ${response.status}`
+            `Failed to submit challenge. Status: ${response.status}`
         );
       }
 
-      // -----------------------------------------------
-      // SUCCESS
-      // -----------------------------------------------
-      console.log("Issue created:", data);
+      console.log("Challenge created:", data);
 
       setMessage(
-        "Your issue has been reported successfully."
+        "Your societal challenge has been submitted successfully."
       );
 
       // Clear form
+      setTitle("");
+      setCategory("");
+      setDescription("");
       setImage(null);
       setImagePreview("");
-      setDescription("");
 
-      // Redirect to dashboard
+      // Redirect
       setTimeout(() => {
         navigate("/dashboard");
-      }, 1500);
+      }, 1800);
     } catch (error) {
       console.error(
-        "Submit issue error:",
+        "Submit challenge error:",
         error
       );
 
       setError(
         error.message ||
-          "Something went wrong while submitting the issue."
+          "Something went wrong while submitting the challenge."
       );
     } finally {
       setIsSubmitting(false);
@@ -397,25 +381,38 @@ function ReportIssue() {
   return (
     <>
       <style>{`
+
         * {
           box-sizing: border-box;
         }
 
-        .report-page {
+        .challenge-page {
           min-height: 100vh;
-          background: #112c56ff;
+          background:
+            radial-gradient(
+              circle at top left,
+              rgba(37, 99, 235, 0.08),
+              transparent 30%
+            ),
+            #f8fafc;
           color: #1f2937;
           font-family: Arial, Helvetica, sans-serif;
         }
 
-        .report-header {
+        /* HEADER */
+
+        .challenge-header {
           height: 72px;
-          background: #ffffff;
+          background: rgba(255, 255, 255, 0.94);
           border-bottom: 1px solid #e5e7eb;
           display: flex;
           align-items: center;
           justify-content: space-between;
           padding: 0 7%;
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          backdrop-filter: blur(12px);
         }
 
         .back-button {
@@ -435,49 +432,57 @@ function ReportIssue() {
           color: #2563eb;
         }
 
-        .report-brand {
+        .challenge-brand {
           display: flex;
           align-items: center;
           gap: 12px;
         }
 
-        .report-logo {
+        .challenge-logo {
           width: 40px;
           height: 40px;
-          border-radius: 9px;
-          background: #1d4ed8;
+          border-radius: 10px;
+          background: linear-gradient(
+            135deg,
+            #2563eb,
+            #4f46e5
+          );
           color: white;
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 20px;
           font-weight: 700;
+          box-shadow:
+            0 5px 15px rgba(37, 99, 235, 0.2);
         }
 
-        .report-brand h2 {
+        .challenge-brand h2 {
           margin: 0;
           font-size: 19px;
           color: #111827;
         }
 
-        .report-brand span {
+        .challenge-brand span {
           display: block;
           margin-top: 2px;
           color: #6b7280;
           font-size: 11px;
         }
 
-        .report-container {
-          width: min(850px, 92%);
+        /* MAIN */
+
+        .challenge-container {
+          width: min(900px, 92%);
           margin: 0 auto;
-          padding: 55px 0 70px;
+          padding: 50px 0 70px;
         }
 
-        .report-heading {
-          margin-bottom: 35px;
+        .challenge-heading {
+          margin-bottom: 32px;
         }
 
-        .report-label {
+        .challenge-label {
           margin: 0 0 8px;
           color: #2563eb;
           font-size: 12px;
@@ -485,45 +490,69 @@ function ReportIssue() {
           letter-spacing: 1.5px;
         }
 
-        .report-heading h1 {
+        .challenge-heading h1 {
           margin: 0;
-          font-size: 36px;
+          font-size: 38px;
           color: #111827;
+          letter-spacing: -0.8px;
         }
 
-        .report-heading > p:last-child {
+        .challenge-heading > p:last-child {
           margin-top: 10px;
           color: #6b7280;
           font-size: 16px;
           line-height: 1.6;
+          max-width: 650px;
         }
 
-        .report-form {
+        /* PROGRESS */
+
+        .workflow-info {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 28px;
+          padding: 14px 16px;
+          background: #eff6ff;
+          border: 1px solid #dbeafe;
+          border-radius: 12px;
+          color: #1d4ed8;
+          font-size: 13px;
+        }
+
+        .workflow-info strong {
+          color: #1e40af;
+        }
+
+        /* FORM */
+
+        .challenge-form {
           display: flex;
           flex-direction: column;
-          gap: 22px;
+          gap: 20px;
         }
 
-        .report-card {
-          background: #ffffff;
+        .challenge-card {
+          background: rgba(255, 255, 255, 0.96);
           border: 1px solid #e5e7eb;
-          border-radius: 14px;
+          border-radius: 16px;
           padding: 26px;
-          box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+          box-shadow:
+            0 5px 20px rgba(15, 23, 42, 0.045);
         }
 
         .card-heading {
           display: flex;
           align-items: flex-start;
           gap: 13px;
-          margin-bottom: 22px;
+          margin-bottom: 21px;
         }
 
         .heading-icon {
-          width: 40px;
-          height: 40px;
+          width: 42px;
+          height: 42px;
           flex-shrink: 0;
-          border-radius: 9px;
+          border-radius: 10px;
           background: #eff6ff;
           color: #2563eb;
           display: flex;
@@ -543,6 +572,159 @@ function ReportIssue() {
           font-size: 13px;
           line-height: 1.5;
         }
+
+        /* INPUT */
+
+        .field-group {
+          margin-bottom: 18px;
+        }
+
+        .field-group:last-child {
+          margin-bottom: 0;
+        }
+
+        .field-label {
+          display: block;
+          margin-bottom: 8px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #374151;
+        }
+
+        .required {
+          color: #dc2626;
+        }
+
+        .text-input,
+        .category-select {
+          width: 100%;
+          height: 48px;
+          border: 1px solid #d1d5db;
+          border-radius: 10px;
+          padding: 0 14px;
+          font-family: inherit;
+          font-size: 14px;
+          color: #1f2937;
+          background: white;
+          outline: none;
+          transition: 0.2s ease;
+        }
+
+        .text-input:focus,
+        .category-select:focus {
+          border-color: #2563eb;
+          box-shadow:
+            0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .text-input::placeholder {
+          color: #9ca3af;
+        }
+
+        /* DESCRIPTION */
+
+        .voice-area textarea {
+          width: 100%;
+          min-height: 145px;
+          resize: vertical;
+          border: 1px solid #d1d5db;
+          border-radius: 10px;
+          padding: 14px;
+          font-family: inherit;
+          font-size: 14px;
+          color: #1f2937;
+          outline: none;
+          transition: 0.2s ease;
+        }
+
+        .voice-area textarea:focus {
+          border-color: #2563eb;
+          box-shadow:
+            0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .voice-area textarea::placeholder {
+          color: #9ca3af;
+        }
+
+        .voice-controls {
+          margin-top: 12px;
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          flex-wrap: wrap;
+        }
+
+        .voice-button {
+          border: none;
+          border-radius: 9px;
+          background: #2563eb;
+          color: white;
+          padding: 10px 16px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: 0.2s ease;
+        }
+
+        .voice-button:hover {
+          background: #1d4ed8;
+        }
+
+        .voice-button:disabled {
+          background: #9ca3af;
+          cursor: not-allowed;
+        }
+
+        .voice-button.recording {
+          background: #dc2626;
+        }
+
+        .recording-indicator {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          color: #dc2626;
+          font-size: 13px;
+          font-weight: 600;
+        }
+
+        .pulse-dot {
+          width: 9px;
+          height: 9px;
+          background: #dc2626;
+          border-radius: 50%;
+          animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+
+          50% {
+            transform: scale(1.5);
+            opacity: 0.5;
+          }
+
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+
+        .voice-help {
+          margin: 10px 0 0;
+          color: #9ca3af;
+          font-size: 12px;
+          line-height: 1.5;
+        }
+
+        /* IMAGE */
 
         .upload-box {
           min-height: 190px;
@@ -620,6 +802,8 @@ function ReportIssue() {
           background: #dc2626;
         }
 
+        /* LOCATION */
+
         .location-box {
           display: flex;
           align-items: center;
@@ -668,105 +852,69 @@ function ReportIssue() {
           }
         }
 
-        .voice-area textarea {
-          width: 100%;
-          min-height: 130px;
-          resize: vertical;
-          border: 1px solid #d1d5db;
-          border-radius: 10px;
-          padding: 14px;
-          font-family: inherit;
-          font-size: 14px;
-          color: #1f2937;
-          outline: none;
-          transition: 0.2s ease;
+        /* AI INFO */
+
+        .ai-card {
+          background:
+            linear-gradient(
+              135deg,
+              #f5f3ff,
+              #eff6ff
+            );
+          border: 1px solid #ddd6fe;
         }
 
-        .voice-area textarea:focus {
-          border-color: #2563eb;
-          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        .voice-area textarea::placeholder {
-          color: #9ca3af;
-        }
-
-        .voice-controls {
-          margin-top: 14px;
+        .ai-content {
           display: flex;
-          align-items: center;
           gap: 15px;
-          flex-wrap: wrap;
+          align-items: flex-start;
         }
 
-        .voice-button {
-          border: none;
-          border-radius: 9px;
-          background: #2563eb;
-          color: white;
-          padding: 11px 17px;
+        .ai-icon {
+          width: 44px;
+          height: 44px;
+          flex-shrink: 0;
+          border-radius: 11px;
+          background: #ffffff;
+          color: #7c3aed;
           display: flex;
           align-items: center;
-          gap: 9px;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: 0.2s ease;
+          justify-content: center;
+          box-shadow:
+            0 3px 10px rgba(124, 58, 237, 0.1);
         }
 
-        .voice-button:hover {
-          background: #1d4ed8;
+        .ai-content h3 {
+          margin: 0;
+          font-size: 15px;
+          color: #312e81;
         }
 
-        .voice-button:disabled {
-          background: #9ca3af;
-          cursor: not-allowed;
-        }
-
-        .voice-button.recording {
-          background: #dc2626;
-        }
-
-        .recording-indicator {
-          display: flex;
-          align-items: center;
-          gap: 7px;
-          color: #dc2626;
+        .ai-content p {
+          margin: 6px 0 0;
+          color: #5b21b6;
           font-size: 13px;
+          line-height: 1.6;
+        }
+
+        .ai-points {
+          margin-top: 12px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .ai-tag {
+          background: rgba(255,255,255,0.8);
+          border: 1px solid #ddd6fe;
+          border-radius: 20px;
+          padding: 6px 10px;
+          color: #5b21b6;
+          font-size: 11px;
           font-weight: 600;
         }
 
-        .pulse-dot {
-          width: 9px;
-          height: 9px;
-          background: #dc2626;
-          border-radius: 50%;
-          animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-          0% {
-            transform: scale(1);
-            opacity: 1;
-          }
-
-          50% {
-            transform: scale(1.5);
-            opacity: 0.5;
-          }
-
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-
-        .voice-help {
-          margin: 12px 0 0;
-          color: #9ca3af;
-          font-size: 12px;
-          line-height: 1.5;
-        }
+        /* MESSAGES */
 
         .form-message {
           display: flex;
@@ -789,12 +937,19 @@ function ReportIssue() {
           border: 1px solid #bbf7d0;
         }
 
-        .submit-report-button {
+        /* SUBMIT */
+
+        .submit-challenge-button {
           width: 100%;
           border: none;
-          border-radius: 10px;
-          padding: 14px 20px;
-          background: #1d4ed8;
+          border-radius: 11px;
+          padding: 15px 20px;
+          background:
+            linear-gradient(
+              135deg,
+              #2563eb,
+              #4f46e5
+            );
           color: white;
           font-size: 15px;
           font-weight: 700;
@@ -804,49 +959,61 @@ function ReportIssue() {
           gap: 9px;
           cursor: pointer;
           transition: 0.2s ease;
+          box-shadow:
+            0 7px 18px rgba(37, 99, 235, 0.18);
         }
 
-        .submit-report-button:hover {
-          background: #1e40af;
+        .submit-challenge-button:hover {
+          transform: translateY(-1px);
+          box-shadow:
+            0 10px 22px rgba(37, 99, 235, 0.23);
         }
 
-        .submit-report-button:disabled {
+        .submit-challenge-button:disabled {
           background: #93a3c9;
           cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
         }
 
         .submit-loader {
           animation: spin 1s linear infinite;
         }
 
+        /* MOBILE */
+
         @media (max-width: 700px) {
-          .report-header {
+
+          .challenge-header {
             padding: 0 5%;
           }
 
-          .report-container {
+          .challenge-container {
             width: 92%;
             padding-top: 35px;
           }
 
-          .report-heading h1 {
+          .challenge-heading h1 {
             font-size: 30px;
           }
 
-          .report-card {
+          .challenge-card {
             padding: 20px;
           }
 
           .image-preview-wrapper {
             height: 230px;
           }
+
         }
+
       `}</style>
 
-      <div className="report-page">
+      <div className="challenge-page">
 
         {/* HEADER */}
-        <header className="report-header">
+        <header className="challenge-header">
+
           <button
             className="back-button"
             onClick={() => navigate("/dashboard")}
@@ -855,54 +1022,258 @@ function ReportIssue() {
             Back
           </button>
 
-          <div className="report-brand">
-            <div className="report-logo">R</div>
+          <div className="challenge-brand">
+
+            <div className="challenge-logo">
+              R
+            </div>
 
             <div>
               <h2>ResolveX</h2>
-              <span>Report • Track • Resolve</span>
+              <span>
+                From Challenge to Real-World Impact
+              </span>
             </div>
+
           </div>
+
         </header>
 
         {/* MAIN */}
-        <main className="report-container">
+        <main className="challenge-container">
 
-          <div className="report-heading">
-            <p className="report-label">
-              CITIZEN REPORT
+          <div className="challenge-heading">
+
+            <p className="challenge-label">
+              CHALLENGE CREATION
             </p>
 
-            <h1>Report an Issue</h1>
+            <h1>
+              Submit a Societal Challenge
+            </h1>
 
             <p>
-              Help us identify and resolve civic problems
-              in your area.
+              Help identify a real-world problem that
+              can be transformed into a meaningful
+              solution through collaboration.
             </p>
+
+          </div>
+
+          <div className="workflow-info">
+            <Sparkles size={18} />
+
+            <span>
+              <strong>What happens next?</strong>{" "}
+              Your challenge will be analyzed by AI,
+              reviewed by the government, and matched
+              with suitable institutions.
+            </span>
           </div>
 
           <form
-            className="report-form"
+            className="challenge-form"
             onSubmit={handleSubmit}
           >
 
-            {/* IMAGE */}
-            <section className="report-card">
+            {/* BASIC INFORMATION */}
+            <section className="challenge-card">
 
               <div className="card-heading">
+
+                <div className="heading-icon">
+                  <FileText size={20} />
+                </div>
+
+                <div>
+                  <h2>
+                    Challenge Information
+                  </h2>
+
+                  <p>
+                    Give us a clear understanding of
+                    the problem you want to highlight.
+                  </p>
+                </div>
+
+              </div>
+
+              <div className="field-group">
+
+                <label className="field-label">
+                  Challenge Title{" "}
+                  <span className="required">*</span>
+                </label>
+
+                <input
+                  type="text"
+                  className="text-input"
+                  value={title}
+                  onChange={(event) =>
+                    setTitle(event.target.value)
+                  }
+                  placeholder="e.g. Water shortage in rural communities"
+                />
+
+              </div>
+
+              <div className="field-group">
+
+                <label className="field-label">
+                  Challenge Category
+                </label>
+
+                <select
+                  className="category-select"
+                  value={category}
+                  onChange={(event) =>
+                    setCategory(event.target.value)
+                  }
+                >
+
+                  <option value="">
+                    Select a category
+                  </option>
+
+                  <option value="WATER">
+                    Water & Sanitation
+                  </option>
+
+                  <option value="EDUCATION">
+                    Education
+                  </option>
+
+                  <option value="HEALTH">
+                    Healthcare
+                  </option>
+
+                  <option value="ENVIRONMENT">
+                    Environment
+                  </option>
+
+                  <option value="TRANSPORT">
+                    Transport & Infrastructure
+                  </option>
+
+                  <option value="AGRICULTURE">
+                    Agriculture
+                  </option>
+
+                  <option value="WASTE">
+                    Waste Management
+                  </option>
+
+                  <option value="OTHER">
+                    Other
+                  </option>
+
+                </select>
+
+              </div>
+
+            </section>
+
+            {/* DESCRIPTION */}
+            <section className="challenge-card">
+
+              <div className="card-heading">
+
+                <div className="heading-icon">
+                  <Mic size={20} />
+                </div>
+
+                <div>
+                  <h2>
+                    Describe the Challenge
+                  </h2>
+
+                  <p>
+                    Explain the problem, its location,
+                    affected people, and why it matters.
+                  </p>
+                </div>
+
+              </div>
+
+              <div className="voice-area">
+
+                <textarea
+                  value={description}
+                  onChange={(event) =>
+                    setDescription(event.target.value)
+                  }
+                  placeholder="Describe the societal problem here..."
+                  rows={5}
+                />
+
+                <div className="voice-controls">
+
+                  <button
+                    type="button"
+                    className={`voice-button ${
+                      isListening ? "recording" : ""
+                    }`}
+                    onClick={handleVoiceInput}
+                    disabled={!speechSupported}
+                  >
+
+                    {isListening ? (
+                      <>
+                        <MicOff size={20} />
+                        Stop Listening
+                      </>
+                    ) : (
+                      <>
+                        <Mic size={20} />
+                        Speak Description
+                      </>
+                    )}
+
+                  </button>
+
+                  {isListening && (
+                    <div className="recording-indicator">
+                      <span className="pulse-dot"></span>
+                      Listening...
+                    </div>
+                  )}
+
+                </div>
+
+                <p className="voice-help">
+                  You can type your description or use
+                  the microphone to describe the challenge
+                  naturally.
+                </p>
+
+              </div>
+
+            </section>
+
+            {/* IMAGE */}
+            <section className="challenge-card">
+
+              <div className="card-heading">
+
                 <div className="heading-icon">
                   <Camera size={20} />
                 </div>
 
                 <div>
-                  <h2>Upload Issue Image</h2>
+                  <h2>
+                    Supporting Image
+                  </h2>
+
                   <p>
-                    Add a clear photo of the civic issue.
+                    Add an image that helps explain
+                    the real-world problem.
                   </p>
                 </div>
+
               </div>
 
               {!imagePreview ? (
+
                 <label className="upload-box">
 
                   <input
@@ -921,16 +1292,18 @@ function ReportIssue() {
                   </strong>
 
                   <span>
-                    Click here to select a photo
+                    JPG, JPEG or PNG
                   </span>
 
                 </label>
+
               ) : (
+
                 <div className="image-preview-wrapper">
 
                   <img
                     src={imagePreview}
-                    alt="Selected issue"
+                    alt="Selected challenge"
                     className="issue-preview"
                   />
 
@@ -943,25 +1316,31 @@ function ReportIssue() {
                   </button>
 
                 </div>
+
               )}
 
             </section>
 
             {/* LOCATION */}
-            <section className="report-card">
+            <section className="challenge-card">
 
               <div className="card-heading">
+
                 <div className="heading-icon">
                   <MapPin size={20} />
                 </div>
 
                 <div>
-                  <h2>Issue Location</h2>
+                  <h2>
+                    Challenge Location
+                  </h2>
+
                   <p>
-                    Your current location will be
-                    attached to the report.
+                    The location helps ResolveX understand
+                    where the problem exists.
                   </p>
                 </div>
+
               </div>
 
               <div
@@ -982,6 +1361,7 @@ function ReportIssue() {
                 )}
 
                 <div>
+
                   <strong>
                     {locationStatus}
                   </strong>
@@ -992,78 +1372,61 @@ function ReportIssue() {
                       {location.longitude.toFixed(6)}
                     </span>
                   )}
+
                 </div>
 
               </div>
 
             </section>
 
-            {/* DESCRIPTION */}
-            <section className="report-card">
+            {/* AI ANALYSIS */}
+            <section className="challenge-card ai-card">
 
-              <div className="card-heading">
-                <div className="heading-icon">
-                  <Mic size={20} />
+              <div className="ai-content">
+
+                <div className="ai-icon">
+                  <Sparkles size={22} />
                 </div>
 
                 <div>
-                  <h2>Describe the Issue</h2>
+
+                  <h3>
+                    AI-Powered Challenge Analysis
+                  </h3>
+
                   <p>
-                    Tell us what is wrong using your voice.
+                    After submission, ResolveX can
+                    analyze your challenge to identify
+                    its domain, priority, required
+                    expertise, technologies and potential
+                    impact.
                   </p>
-                </div>
-              </div>
 
-              <div className="voice-area">
+                  <div className="ai-points">
 
-                <textarea
-                  value={description}
-                  onChange={(event) =>
-                    setDescription(event.target.value)
-                  }
-                  placeholder="Describe the civic issue here..."
-                  rows={5}
-                />
+                    <span className="ai-tag">
+                      Domain Classification
+                    </span>
 
-                <div className="voice-controls">
+                    <span className="ai-tag">
+                      Priority
+                    </span>
 
-                  <button
-                    type="button"
-                    className={`voice-button ${
-                      isListening ? "recording" : ""
-                    }`}
-                    onClick={handleVoiceInput}
-                    disabled={!speechSupported}
-                  >
+                    <span className="ai-tag">
+                      Required Expertise
+                    </span>
 
-                    {isListening ? (
-                      <>
-                        <MicOff size={21} />
-                        Stop Listening
-                      </>
-                    ) : (
-                      <>
-                        <Mic size={21} />
-                        Speak Description
-                      </>
-                    )}
+                    <span className="ai-tag">
+                      Technology
+                    </span>
 
-                  </button>
+                    <span className="ai-tag">
+                      Impact
+                    </span>
 
-                  {isListening && (
-                    <div className="recording-indicator">
-                      <span className="pulse-dot"></span>
-                      Listening...
-                    </div>
-                  )}
+                  </div>
 
                 </div>
-
-                <p className="voice-help">
-                  Tap the microphone and describe the
-                  issue naturally. Your speech will be
-                  converted into text automatically.
-                </p>
 
               </div>
 
@@ -1088,7 +1451,7 @@ function ReportIssue() {
             {/* SUBMIT */}
             <button
               type="submit"
-              className="submit-report-button"
+              className="submit-challenge-button"
               disabled={isSubmitting}
             >
 
@@ -1098,23 +1461,24 @@ function ReportIssue() {
                     size={20}
                     className="submit-loader"
                   />
-                  Submitting...
+                  Submitting Challenge...
                 </>
               ) : (
                 <>
                   <Send size={19} />
-                  Submit Issue
+                  Submit Challenge
                 </>
               )}
 
             </button>
 
           </form>
+
         </main>
+
       </div>
     </>
   );
 }
 
 export default ReportIssue;
-
