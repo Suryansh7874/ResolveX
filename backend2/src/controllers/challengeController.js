@@ -134,13 +134,14 @@ const createChallenge = async (req, res) => {
     // ==========================================
 
     const challenge = await Challenge.create({
-      submittedBy: req.user.userId,
+      submittedBy: req.user.id,
 
       title,
 
       description,
 
       domain: classification.domain,
+
 
       location: {
         type: "Point",
@@ -255,7 +256,7 @@ const getMyChallenges = async (req, res) => {
   try {
 
     const challenges = await Challenge.find({
-      submittedBy: req.user.userId
+      submittedBy: req.user.id
     })
       .sort({ createdAt: -1 });
 
@@ -400,7 +401,7 @@ const supportChallenge = async (req, res) => {
 
     const { challengeId } = req.params;
 
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
 
     const challenge = await Challenge.findById(
@@ -466,7 +467,7 @@ const deleteMyChallenge = async (req, res) => {
     const challenge =
       await Challenge.findOneAndDelete({
         _id: challengeId,
-        submittedBy: req.user.userId
+        submittedBy: req.user.id
       });
 
 
@@ -576,7 +577,7 @@ const validateChallenge = async (req, res) => {
 
       challenge.validation = {
         isValidated: true,
-        validatedBy: req.user.userId,
+        validatedBy: req.user.id,
         validatedAt: new Date(),
         validationNotes: notes || null,
         rejectionReason: null,
@@ -586,7 +587,7 @@ const validateChallenge = async (req, res) => {
 
       challenge.validation = {
         isValidated: false,
-        validatedBy: req.user.userId,
+        validatedBy: req.user.id,
         validatedAt: new Date(),
         validationNotes: notes || null,
         rejectionReason: rejectionReason || "Challenge rejected",

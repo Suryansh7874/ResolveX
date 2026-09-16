@@ -16,8 +16,8 @@ const notificationRoutes = require("./src/routes/notificationRoutes");
 const heiMemberRoutes = require("./src/routes/heiMemberRoutes");
 const heiRoutes = require("./src/routes/heiRoutes");
 
-const projectTeamRoutes = require("./routes/projectTeamRoutes");
-const proposalRoutes = require("./routes/proposalRoutes");
+const projectTeamRoutes = require("./src/routes/projectTeamRoutes");
+const proposalRoutes = require("./src/routes/proposalRoutes");
 
 const app = express();
 
