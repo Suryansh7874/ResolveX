@@ -200,9 +200,10 @@ const submitProposal = async (req, res) => {
       });
     }
 
-    if (proposal.status !== "DRAFT") {
+    if (proposal.status !== "DRAFT" &&
+        proposal.status !== "REVISION_REQUIRED") {
       return res.status(400).json({
-        message: "Only draft proposals can be submitted",
+        message: "Only draft or revision-required proposals can be submitted",
       });
     }
 

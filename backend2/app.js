@@ -18,6 +18,7 @@ const heiRoutes = require("./src/routes/heiRoutes");
 
 const projectTeamRoutes = require("./src/routes/projectTeamRoutes");
 const proposalRoutes = require("./src/routes/proposalRoutes");
+const projectRoutes = require("./src/routes/projectRoutes");
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use("/api/hei-members", heiMemberRoutes);
 
 app.use("/api/project-teams", projectTeamRoutes);
 app.use("/api/proposals", proposalRoutes);
+app.use("/api/projects", projectRoutes);
 
 app.use("/api/ai", aiRoutes);
 
