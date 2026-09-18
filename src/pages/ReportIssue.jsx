@@ -12,20 +12,28 @@ import {
   X,
   Sparkles,
   FileText,
+  Video,
 } from "lucide-react";
 
 function ReportIssue() {
   const navigate = useNavigate();
 
+  // --------------------------------------------------
+  // FORM STATE
+  // --------------------------------------------------
+
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
 
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
 
-  const [isListening, setIsListening] = useState(false);
-  const [speechSupported, setSpeechSupported] = useState(true);
+  const [video, setVideo] = useState(null);
+  const [videoPreview, setVideoPreview] = useState("");
+
+  // --------------------------------------------------
+  // LOCATION
+  // --------------------------------------------------
 
   const [location, setLocation] = useState({
     latitude: null,
@@ -36,15 +44,27 @@ function ReportIssue() {
     "Fetching your location..."
   );
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  // --------------------------------------------------
+  // VOICE
+  // --------------------------------------------------
+
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(true);
 
   const recognitionRef = useRef(null);
 
   // --------------------------------------------------
-  // GET USER LOCATION
+  // SUBMISSION
   // --------------------------------------------------
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  // --------------------------------------------------
+  // GET LOCATION
+  // --------------------------------------------------
+
   useEffect(() => {
     if (!navigator.geolocation) {
       setLocationStatus(
@@ -83,6 +103,7 @@ function ReportIssue() {
   // --------------------------------------------------
   // SPEECH RECOGNITION
   // --------------------------------------------------
+
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition ||
@@ -166,49 +187,18 @@ function ReportIssue() {
       try {
         recognition.stop();
       } catch (error) {
-        console.error("Speech cleanup error:", error);
+        console.error(
+          "Speech cleanup error:",
+          error
+        );
       }
     };
   }, []);
 
   // --------------------------------------------------
-  // IMAGE SELECTION
-  // --------------------------------------------------
-  const handleImageChange = (event) => {
-    const file = event.target.files[0];
-
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setError("Please select a valid image file.");
-      return;
-    }
-
-    // Release previous preview URL
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-    }
-
-    setImage(file);
-    setImagePreview(URL.createObjectURL(file));
-    setError("");
-  };
-
-  // --------------------------------------------------
-  // REMOVE IMAGE
-  // --------------------------------------------------
-  const removeImage = () => {
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-    }
-
-    setImage(null);
-    setImagePreview("");
-  };
-
-  // --------------------------------------------------
   // VOICE INPUT
   // --------------------------------------------------
+
   const handleVoiceInput = () => {
     if (!speechSupported) {
       setError(
@@ -228,7 +218,10 @@ function ReportIssue() {
       try {
         recognitionRef.current.stop();
       } catch (error) {
-        console.error("Voice stop error:", error);
+        console.error(
+          "Voice stop error:",
+          error
+        );
       }
 
       setIsListening(false);
@@ -240,7 +233,10 @@ function ReportIssue() {
     try {
       recognitionRef.current.start();
     } catch (error) {
-      console.error("Voice start error:", error);
+      console.error(
+        "Voice start error:",
+        error
+      );
 
       setError(
         "Voice recognition could not be started. Please try again."
@@ -249,103 +245,140 @@ function ReportIssue() {
   };
 
   // --------------------------------------------------
-  // CLEAN / PARSE SERVER RESPONSE
+  // IMAGE SELECTION
   // --------------------------------------------------
-  const parseServerResponse = (responseText) => {
-    if (!responseText || !responseText.trim()) {
-      return null;
+
+  const handleImageChange = (event) => {
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please select a valid image file.");
+      return;
     }
 
-    let cleanedResponse = responseText.trim();
-
-    /*
-     * Sometimes the AI/backend may return:
-     *
-     * ```json
-     * {
-     *   ...
-     * }
-     * ```
-     *
-     * Remove Markdown code fences before parsing.
-     */
-    cleanedResponse = cleanedResponse
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-
-    try {
-      return JSON.parse(cleanedResponse);
-    } catch (error) {
-      console.error(
-        "JSON parsing failed:",
-        error
-      );
-
-      console.error(
-        "Raw server response:",
-        responseText
-      );
-
-      console.error(
-        "Cleaned server response:",
-        cleanedResponse
-      );
-
-      /*
-       * Sometimes there can be extra text before/after
-       * the JSON object. Try extracting the object.
-       */
-      const firstBrace = cleanedResponse.indexOf("{");
-      const lastBrace = cleanedResponse.lastIndexOf("}");
-
-      if (
-        firstBrace !== -1 &&
-        lastBrace !== -1 &&
-        lastBrace > firstBrace
-      ) {
-        const possibleJson = cleanedResponse.substring(
-          firstBrace,
-          lastBrace + 1
-        );
-
-        try {
-          return JSON.parse(possibleJson);
-        } catch (secondError) {
-          console.error(
-            "Second JSON parsing attempt failed:",
-            secondError
-          );
-        }
-      }
-
-      return null;
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
     }
+
+    setImage(file);
+    setImagePreview(URL.createObjectURL(file));
+
+    // Clear video if image is selected
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+
+    setVideo(null);
+    setVideoPreview("");
+
+    setError("");
+  };
+
+  // --------------------------------------------------
+  // REMOVE IMAGE
+  // --------------------------------------------------
+
+  const removeImage = () => {
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
+    setImage(null);
+    setImagePreview("");
+  };
+
+  // --------------------------------------------------
+  // VIDEO SELECTION
+  // --------------------------------------------------
+
+  const handleVideoChange = (event) => {
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("video/")) {
+      setError("Please select a valid video file.");
+      return;
+    }
+
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+
+    setVideo(file);
+    setVideoPreview(URL.createObjectURL(file));
+
+    // Clear image if video is selected
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
+    setImage(null);
+    setImagePreview("");
+
+    setError("");
+  };
+
+  // --------------------------------------------------
+  // REMOVE VIDEO
+  // --------------------------------------------------
+
+  const removeVideo = () => {
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+
+    setVideo(null);
+    setVideoPreview("");
   };
 
   // --------------------------------------------------
   // SUBMIT CHALLENGE
   // --------------------------------------------------
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     setError("");
     setMessage("");
 
-    // Validate title
+    // ----------------------------------------------
+    // VALIDATION
+    // ----------------------------------------------
+
     if (!title.trim()) {
-      setError("Please enter a title for the challenge.");
+      setError(
+        "Please enter a title for the challenge."
+      );
       return;
     }
 
-    // Validate description
+    if (title.trim().length < 5) {
+      setError(
+        "Challenge title should contain at least 5 characters."
+      );
+      return;
+    }
+
     if (!description.trim()) {
-      setError("Please describe the societal challenge.");
+      setError(
+        "Please describe the societal challenge."
+      );
       return;
     }
 
-    // Validate image
+    if (description.trim().length < 20) {
+      setError(
+        "Please provide a more detailed description of the challenge."
+      );
+      return;
+    }
+
+    // New backend requires media.
+    // At least one image is required by the current
+    // challenge controller.
     if (!image) {
       setError(
         "Please upload an image related to the challenge."
@@ -353,7 +386,6 @@ function ReportIssue() {
       return;
     }
 
-    // Validate location
     if (
       location.latitude === null ||
       location.longitude === null
@@ -364,7 +396,10 @@ function ReportIssue() {
       return;
     }
 
-    // Check authentication
+    // ----------------------------------------------
+    // AUTHENTICATION
+    // ----------------------------------------------
+
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -375,81 +410,97 @@ function ReportIssue() {
     setIsSubmitting(true);
 
     try {
+      // --------------------------------------------
+      // FORM DATA
+      // --------------------------------------------
+
       const formData = new FormData();
 
-      formData.append(
-        "title",
-        title.trim()
-      );
+formData.append("title", title);
+formData.append("description", description);
+formData.append("location", JSON.stringify(location));
 
-      formData.append(
-        "description",
-        description.trim()
-      );
+const user = JSON.parse(localStorage.getItem("user"));
 
-      formData.append(
-        "location",
-        JSON.stringify({
-          latitude: location.latitude,
-          longitude: location.longitude,
-        })
-      );
+const submittedBy = user?._id || user?.id || user?.userId;
 
-      formData.append(
-        "image",
-        image
-      );
+if (!submittedBy) {
+  setError("User ID not found. Please login again.");
+  return;
+}
 
-      // Send category only if selected
-      if (category) {
-        formData.append(
-          "category",
-          category
-        );
-      }
+formData.append("submittedBy", submittedBy);
+
+formData.append("image", image);
+
+if (video) {
+  formData.append("video", video);
+}
+      // --------------------------------------------
+      // DEBUG
+      // --------------------------------------------
 
       console.log(
         "----------------------------------------"
       );
+
       console.log(
-        "Submitting ResolveX challenge..."
+        "Submitting ResolveX Challenge..."
       );
+
       console.log(
         "Title:",
         title.trim()
       );
-      console.log(
-        "Category:",
-        category
-      );
+
       console.log(
         "Description:",
         description.trim()
       );
+
       console.log(
         "Location:",
-        location
+        {
+          latitude: location.latitude,
+          longitude: location.longitude,
+        }
       );
+
       console.log(
         "Image:",
-        image.name
+        image?.name
       );
+
+      console.log(
+        "Video:",
+        video?.name || "None"
+      );
+
       console.log(
         "----------------------------------------"
       );
 
+      // --------------------------------------------
+      // NEW CHALLENGE API
+      // --------------------------------------------
+
       const response = await fetch(
-        "http://localhost:5000/api/issues",
+        "http://localhost:5000/api/challenges",
         {
           method: "POST",
+
           headers: {
             Authorization: `Bearer ${token}`,
           },
+
           body: formData,
         }
       );
 
-      // Always read the raw response first
+      // --------------------------------------------
+      // READ SERVER RESPONSE
+      // --------------------------------------------
+
       const responseText =
         await response.text();
 
@@ -463,18 +514,23 @@ function ReportIssue() {
         responseText
       );
 
-      // Parse response safely
-      const data =
-        parseServerResponse(responseText);
+      let data = null;
 
-      /*
-       * IMPORTANT:
-       * Handle HTTP errors separately from JSON parsing.
-       *
-       * This means if backend returns 400, we show the
-       * actual backend error instead of incorrectly saying
-       * "invalid JSON".
-       */
+      if (responseText.trim()) {
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error(
+            "JSON parsing failed:",
+            parseError
+          );
+        }
+      }
+
+      // --------------------------------------------
+      // HANDLE SERVER ERROR
+      // --------------------------------------------
+
       if (!response.ok) {
         const serverMessage =
           data?.message ||
@@ -482,19 +538,10 @@ function ReportIssue() {
           data?.msg;
 
         if (serverMessage) {
-          throw new Error(
-            serverMessage
-          );
+          throw new Error(serverMessage);
         }
 
-        /*
-         * If backend returned plain text rather than JSON,
-         * display that text.
-         */
-        if (
-          responseText &&
-          responseText.trim()
-        ) {
+        if (responseText.trim()) {
           throw new Error(
             `Server error (${response.status}): ${responseText.trim()}`
           );
@@ -505,21 +552,12 @@ function ReportIssue() {
         );
       }
 
-      /*
-       * If request succeeded but response could not be
-       * parsed, don't crash the application.
-       */
-      if (
-        responseText.trim() &&
-        !data
-      ) {
-        throw new Error(
-          "The challenge was processed, but the server returned an invalid response."
-        );
-      }
+      // --------------------------------------------
+      // SUCCESS
+      // --------------------------------------------
 
       console.log(
-        "Challenge created:",
+        "Challenge created successfully:",
         data
       );
 
@@ -529,37 +567,49 @@ function ReportIssue() {
 
       // Clear form
       setTitle("");
-      setCategory("");
       setDescription("");
+
       setImage(null);
 
       if (imagePreview) {
-        URL.revokeObjectURL(
-          imagePreview
-        );
+        URL.revokeObjectURL(imagePreview);
       }
 
       setImagePreview("");
 
-      // Redirect
+      setVideo(null);
+
+      if (videoPreview) {
+        URL.revokeObjectURL(videoPreview);
+      }
+
+      setVideoPreview("");
+
+      // Redirect to dashboard
       setTimeout(() => {
         navigate("/dashboard");
       }, 1800);
-
     } catch (error) {
       console.error(
         "Submit challenge error:",
         error
       );
 
-      setError(
-        error.message ||
+      if (error?.message) {
+        setError(error.message);
+      } else {
+        setError(
           "Something went wrong while submitting the challenge."
-      );
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // --------------------------------------------------
+  // UI
+  // --------------------------------------------------
 
   return (
     <>
@@ -571,6 +621,7 @@ function ReportIssue() {
 
         .challenge-page {
           min-height: 100vh;
+
           background:
             radial-gradient(
               circle at top left,
@@ -578,36 +629,54 @@ function ReportIssue() {
               transparent 30%
             ),
             #f8fafc;
+
           color: #1f2937;
-          font-family: Arial, Helvetica, sans-serif;
+
+          font-family:
+            Arial,
+            Helvetica,
+            sans-serif;
         }
 
-        /* HEADER */
+        /* ================= HEADER ================= */
 
         .challenge-header {
           height: 72px;
+
           background: rgba(255, 255, 255, 0.94);
-          border-bottom: 1px solid #e5e7eb;
+
+          border-bottom:
+            1px solid #e5e7eb;
+
           display: flex;
           align-items: center;
           justify-content: space-between;
+
           padding: 0 7%;
+
           position: sticky;
           top: 0;
+
           z-index: 10;
+
           backdrop-filter: blur(12px);
         }
 
         .back-button {
           border: none;
           background: transparent;
+
           display: flex;
           align-items: center;
           gap: 8px;
+
           color: #374151;
+
           font-size: 15px;
           font-weight: 600;
+
           cursor: pointer;
+
           padding: 8px 0;
         }
 
@@ -624,40 +693,55 @@ function ReportIssue() {
         .challenge-logo {
           width: 40px;
           height: 40px;
+
           border-radius: 10px;
-          background: linear-gradient(
-            135deg,
-            #2563eb,
-            #4f46e5
-          );
+
+          background:
+            linear-gradient(
+              135deg,
+              #2563eb,
+              #4f46e5
+            );
+
           color: white;
+
           display: flex;
           align-items: center;
           justify-content: center;
+
           font-size: 20px;
           font-weight: 700;
+
           box-shadow:
-            0 5px 15px rgba(37, 99, 235, 0.2);
+            0 5px 15px
+            rgba(37, 99, 235, 0.2);
         }
 
         .challenge-brand h2 {
           margin: 0;
+
           font-size: 19px;
+
           color: #111827;
         }
 
         .challenge-brand span {
           display: block;
+
           margin-top: 2px;
+
           color: #6b7280;
+
           font-size: 11px;
         }
 
-        /* MAIN */
+        /* ================= MAIN ================= */
 
         .challenge-container {
           width: min(900px, 92%);
+
           margin: 0 auto;
+
           padding: 50px 0 70px;
         }
 
@@ -667,39 +751,58 @@ function ReportIssue() {
 
         .challenge-label {
           margin: 0 0 8px;
+
           color: #2563eb;
+
           font-size: 12px;
+
           font-weight: 700;
+
           letter-spacing: 1.5px;
         }
 
         .challenge-heading h1 {
           margin: 0;
+
           font-size: 38px;
+
           color: #111827;
+
           letter-spacing: -0.8px;
         }
 
         .challenge-heading > p:last-child {
           margin-top: 10px;
+
           color: #6b7280;
+
           font-size: 16px;
+
           line-height: 1.6;
+
           max-width: 650px;
         }
 
-        /* PROGRESS */
+        /* ================= WORKFLOW ================= */
 
         .workflow-info {
           display: flex;
           align-items: center;
           gap: 10px;
+
           margin-bottom: 28px;
+
           padding: 14px 16px;
+
           background: #eff6ff;
-          border: 1px solid #dbeafe;
+
+          border:
+            1px solid #dbeafe;
+
           border-radius: 12px;
+
           color: #1d4ed8;
+
           font-size: 13px;
         }
 
@@ -707,37 +810,52 @@ function ReportIssue() {
           color: #1e40af;
         }
 
-        /* FORM */
+        /* ================= FORM ================= */
 
         .challenge-form {
           display: flex;
           flex-direction: column;
+
           gap: 20px;
         }
 
         .challenge-card {
-          background: rgba(255, 255, 255, 0.96);
-          border: 1px solid #e5e7eb;
+          background:
+            rgba(255, 255, 255, 0.96);
+
+          border:
+            1px solid #e5e7eb;
+
           border-radius: 16px;
+
           padding: 26px;
+
           box-shadow:
-            0 5px 20px rgba(15, 23, 42, 0.045);
+            0 5px 20px
+            rgba(15, 23, 42, 0.045);
         }
 
         .card-heading {
           display: flex;
           align-items: flex-start;
+
           gap: 13px;
+
           margin-bottom: 21px;
         }
 
         .heading-icon {
           width: 42px;
           height: 42px;
+
           flex-shrink: 0;
+
           border-radius: 10px;
+
           background: #eff6ff;
+
           color: #2563eb;
+
           display: flex;
           align-items: center;
           justify-content: center;
@@ -745,18 +863,23 @@ function ReportIssue() {
 
         .card-heading h2 {
           margin: 0;
+
           font-size: 18px;
+
           color: #111827;
         }
 
         .card-heading p {
           margin: 5px 0 0;
+
           color: #6b7280;
+
           font-size: 13px;
+
           line-height: 1.5;
         }
 
-        /* INPUT */
+        /* ================= INPUT ================= */
 
         .field-group {
           margin-bottom: 18px;
@@ -768,9 +891,13 @@ function ReportIssue() {
 
         .field-label {
           display: block;
+
           margin-bottom: 8px;
+
           font-size: 13px;
+
           font-weight: 700;
+
           color: #374151;
         }
 
@@ -778,52 +905,76 @@ function ReportIssue() {
           color: #dc2626;
         }
 
-        .text-input,
-        .category-select {
+        .text-input {
           width: 100%;
+
           height: 48px;
-          border: 1px solid #d1d5db;
+
+          border:
+            1px solid #d1d5db;
+
           border-radius: 10px;
+
           padding: 0 14px;
+
           font-family: inherit;
+
           font-size: 14px;
+
           color: #1f2937;
+
           background: white;
+
           outline: none;
+
           transition: 0.2s ease;
         }
 
-        .text-input:focus,
-        .category-select:focus {
+        .text-input:focus {
           border-color: #2563eb;
+
           box-shadow:
-            0 0 0 3px rgba(37, 99, 235, 0.1);
+            0 0 0 3px
+            rgba(37, 99, 235, 0.1);
         }
 
         .text-input::placeholder {
           color: #9ca3af;
         }
 
-        /* DESCRIPTION */
+        /* ================= DESCRIPTION ================= */
 
         .voice-area textarea {
           width: 100%;
+
           min-height: 145px;
+
           resize: vertical;
-          border: 1px solid #d1d5db;
+
+          border:
+            1px solid #d1d5db;
+
           border-radius: 10px;
+
           padding: 14px;
+
           font-family: inherit;
+
           font-size: 14px;
+
           color: #1f2937;
+
           outline: none;
+
           transition: 0.2s ease;
         }
 
         .voice-area textarea:focus {
           border-color: #2563eb;
+
           box-shadow:
-            0 0 0 3px rgba(37, 99, 235, 0.1);
+            0 0 0 3px
+            rgba(37, 99, 235, 0.1);
         }
 
         .voice-area textarea::placeholder {
@@ -832,24 +983,39 @@ function ReportIssue() {
 
         .voice-controls {
           margin-top: 12px;
+
           display: flex;
+
           align-items: center;
+
           gap: 15px;
+
           flex-wrap: wrap;
         }
 
         .voice-button {
           border: none;
+
           border-radius: 9px;
+
           background: #2563eb;
+
           color: white;
+
           padding: 10px 16px;
+
           display: flex;
+
           align-items: center;
+
           gap: 8px;
+
           font-size: 13px;
+
           font-weight: 600;
+
           cursor: pointer;
+
           transition: 0.2s ease;
         }
 
@@ -859,6 +1025,7 @@ function ReportIssue() {
 
         .voice-button:disabled {
           background: #9ca3af;
+
           cursor: not-allowed;
         }
 
@@ -868,18 +1035,26 @@ function ReportIssue() {
 
         .recording-indicator {
           display: flex;
+
           align-items: center;
+
           gap: 7px;
+
           color: #dc2626;
+
           font-size: 13px;
+
           font-weight: 600;
         }
 
         .pulse-dot {
           width: 9px;
           height: 9px;
+
           background: #dc2626;
+
           border-radius: 50%;
+
           animation: pulse 1s infinite;
         }
 
@@ -902,111 +1077,191 @@ function ReportIssue() {
 
         .voice-help {
           margin: 10px 0 0;
+
           color: #9ca3af;
+
           font-size: 12px;
+
           line-height: 1.5;
         }
 
-        /* IMAGE */
+        /* ================= MEDIA ================= */
+
+        .media-note {
+          margin-bottom: 14px;
+
+          padding: 11px 13px;
+
+          background: #f8fafc;
+
+          border:
+            1px solid #e5e7eb;
+
+          border-radius: 9px;
+
+          color: #6b7280;
+
+          font-size: 12px;
+
+          line-height: 1.5;
+        }
+
+        .media-note strong {
+          color: #374151;
+        }
 
         .upload-box {
           min-height: 190px;
-          border: 2px dashed #cbd5e1;
+
+          border:
+            2px dashed #cbd5e1;
+
           border-radius: 12px;
+
           display: flex;
+
           flex-direction: column;
+
           align-items: center;
+
           justify-content: center;
+
           cursor: pointer;
+
           transition: 0.2s ease;
+
           background: #fafcff;
         }
 
         .upload-box:hover {
           border-color: #2563eb;
+
           background: #f8fbff;
         }
 
         .upload-icon {
           width: 55px;
           height: 55px;
+
           border-radius: 50%;
+
           background: #eff6ff;
+
           color: #2563eb;
+
           display: flex;
+
           align-items: center;
+
           justify-content: center;
+
           margin-bottom: 12px;
         }
 
         .upload-box strong {
           font-size: 15px;
+
           color: #1f2937;
         }
 
         .upload-box span {
           margin-top: 5px;
+
           font-size: 13px;
+
           color: #9ca3af;
         }
 
-        .image-preview-wrapper {
+        .image-preview-wrapper,
+        .video-preview-wrapper {
           position: relative;
+
           width: 100%;
+
           height: 300px;
+
           overflow: hidden;
+
           border-radius: 12px;
+
           background: #f3f4f6;
         }
 
-        .issue-preview {
+        .issue-preview,
+        .video-preview {
           width: 100%;
           height: 100%;
+
           object-fit: cover;
         }
 
-        .remove-image {
+        .remove-image,
+        .remove-video {
           position: absolute;
+
           top: 12px;
           right: 12px;
+
           width: 36px;
           height: 36px;
+
           border: none;
+
           border-radius: 50%;
-          background: rgba(17, 24, 39, 0.75);
+
+          background:
+            rgba(17, 24, 39, 0.75);
+
           color: white;
+
           display: flex;
+
           align-items: center;
+
           justify-content: center;
+
           cursor: pointer;
         }
 
-        .remove-image:hover {
+        .remove-image:hover,
+        .remove-video:hover {
           background: #dc2626;
         }
 
-        /* LOCATION */
+        /* ================= LOCATION ================= */
 
         .location-box {
           display: flex;
+
           align-items: center;
+
           gap: 13px;
+
           padding: 17px;
+
           border-radius: 10px;
+
           background: #f9fafb;
-          border: 1px solid #e5e7eb;
+
+          border:
+            1px solid #e5e7eb;
+
           color: #6b7280;
         }
 
         .location-success {
           background: #f0fdf4;
+
           border-color: #bbf7d0;
+
           color: #16a34a;
         }
 
         .location-box strong {
           display: block;
+
           font-size: 14px;
+
           color: #374151;
         }
 
@@ -1016,8 +1271,11 @@ function ReportIssue() {
 
         .location-box span {
           display: block;
+
           margin-top: 4px;
+
           font-size: 12px;
+
           color: #6b7280;
         }
 
@@ -1035,7 +1293,7 @@ function ReportIssue() {
           }
         }
 
-        /* AI INFO */
+        /* ================= AI ================= */
 
         .ai-card {
           background:
@@ -1044,118 +1302,178 @@ function ReportIssue() {
               #f5f3ff,
               #eff6ff
             );
-          border: 1px solid #ddd6fe;
+
+          border:
+            1px solid #ddd6fe;
         }
 
         .ai-content {
           display: flex;
+
           gap: 15px;
+
           align-items: flex-start;
         }
 
         .ai-icon {
           width: 44px;
           height: 44px;
+
           flex-shrink: 0;
+
           border-radius: 11px;
+
           background: #ffffff;
+
           color: #7c3aed;
+
           display: flex;
+
           align-items: center;
+
           justify-content: center;
+
           box-shadow:
-            0 3px 10px rgba(124, 58, 237, 0.1);
+            0 3px 10px
+            rgba(124, 58, 237, 0.1);
         }
 
         .ai-content h3 {
           margin: 0;
+
           font-size: 15px;
+
           color: #312e81;
         }
 
         .ai-content p {
           margin: 6px 0 0;
+
           color: #5b21b6;
+
           font-size: 13px;
+
           line-height: 1.6;
         }
 
         .ai-points {
           margin-top: 12px;
+
           display: flex;
+
           flex-wrap: wrap;
+
           gap: 8px;
         }
 
         .ai-tag {
-          background: rgba(255, 255, 255, 0.8);
-          border: 1px solid #ddd6fe;
+          background:
+            rgba(255, 255, 255, 0.8);
+
+          border:
+            1px solid #ddd6fe;
+
           border-radius: 20px;
+
           padding: 6px 10px;
+
           color: #5b21b6;
+
           font-size: 11px;
+
           font-weight: 600;
         }
 
-        /* MESSAGES */
+        /* ================= MESSAGES ================= */
 
         .form-message {
           display: flex;
+
           align-items: center;
+
           gap: 9px;
+
           padding: 13px 15px;
+
           border-radius: 9px;
+
           font-size: 14px;
         }
 
         .error-message {
           color: #b91c1c;
+
           background: #fef2f2;
-          border: 1px solid #fecaca;
+
+          border:
+            1px solid #fecaca;
         }
 
         .success-message {
           color: #15803d;
+
           background: #f0fdf4;
-          border: 1px solid #bbf7d0;
+
+          border:
+            1px solid #bbf7d0;
         }
 
-        /* SUBMIT */
+        /* ================= SUBMIT ================= */
 
         .submit-challenge-button {
           width: 100%;
+
           border: none;
+
           border-radius: 11px;
+
           padding: 15px 20px;
+
           background:
             linear-gradient(
               135deg,
               #2563eb,
               #4f46e5
             );
+
           color: white;
+
           font-size: 15px;
+
           font-weight: 700;
+
           display: flex;
+
           align-items: center;
+
           justify-content: center;
+
           gap: 9px;
+
           cursor: pointer;
+
           transition: 0.2s ease;
+
           box-shadow:
-            0 7px 18px rgba(37, 99, 235, 0.18);
+            0 7px 18px
+            rgba(37, 99, 235, 0.18);
         }
 
         .submit-challenge-button:hover {
           transform: translateY(-1px);
+
           box-shadow:
-            0 10px 22px rgba(37, 99, 235, 0.23);
+            0 10px 22px
+            rgba(37, 99, 235, 0.23);
         }
 
         .submit-challenge-button:disabled {
           background: #93a3c9;
+
           cursor: not-allowed;
+
           transform: none;
+
           box-shadow: none;
         }
 
@@ -1163,16 +1481,16 @@ function ReportIssue() {
           animation: spin 1s linear infinite;
         }
 
-        /* MOBILE */
+        /* ================= MOBILE ================= */
 
         @media (max-width: 700px) {
-
           .challenge-header {
             padding: 0 5%;
           }
 
           .challenge-container {
             width: 92%;
+
             padding-top: 35px;
           }
 
@@ -1184,17 +1502,18 @@ function ReportIssue() {
             padding: 20px;
           }
 
-          .image-preview-wrapper {
+          .image-preview-wrapper,
+          .video-preview-wrapper {
             height: 230px;
           }
-
         }
 
       `}</style>
 
       <div className="challenge-page">
 
-        {/* HEADER */}
+        {/* ================= HEADER ================= */}
+
         <header className="challenge-header">
 
           <button
@@ -1223,7 +1542,8 @@ function ReportIssue() {
 
         </header>
 
-        {/* MAIN */}
+        {/* ================= MAIN ================= */}
+
         <main className="challenge-container">
 
           <div className="challenge-heading">
@@ -1244,6 +1564,8 @@ function ReportIssue() {
 
           </div>
 
+          {/* ================= WORKFLOW ================= */}
+
           <div className="workflow-info">
 
             <Sparkles size={18} />
@@ -1262,7 +1584,8 @@ function ReportIssue() {
             onSubmit={handleSubmit}
           >
 
-            {/* BASIC INFORMATION */}
+            {/* ================= BASIC INFORMATION ================= */}
+
             <section className="challenge-card">
 
               <div className="card-heading">
@@ -1272,7 +1595,6 @@ function ReportIssue() {
                 </div>
 
                 <div>
-
                   <h2>
                     Challenge Information
                   </h2>
@@ -1281,7 +1603,6 @@ function ReportIssue() {
                     Give us a clear understanding of
                     the problem you want to highlight.
                   </p>
-
                 </div>
 
               </div>
@@ -1289,13 +1610,10 @@ function ReportIssue() {
               <div className="field-group">
 
                 <label className="field-label">
-
                   Challenge Title{" "}
-
                   <span className="required">
                     *
                   </span>
-
                 </label>
 
                 <input
@@ -1306,67 +1624,15 @@ function ReportIssue() {
                     setTitle(event.target.value)
                   }
                   placeholder="e.g. Water shortage in rural communities"
+                  maxLength={150}
                 />
-
-              </div>
-
-              <div className="field-group">
-
-                <label className="field-label">
-                  Challenge Category
-                </label>
-
-                <select
-                  className="category-select"
-                  value={category}
-                  onChange={(event) =>
-                    setCategory(event.target.value)
-                  }
-                >
-
-                  <option value="">
-                    Select a category
-                  </option>
-
-                  <option value="WATER">
-                    Water & Sanitation
-                  </option>
-
-                  <option value="EDUCATION">
-                    Education
-                  </option>
-
-                  <option value="HEALTH">
-                    Healthcare
-                  </option>
-
-                  <option value="ENVIRONMENT">
-                    Environment
-                  </option>
-
-                  <option value="TRANSPORT">
-                    Transport & Infrastructure
-                  </option>
-
-                  <option value="AGRICULTURE">
-                    Agriculture
-                  </option>
-
-                  <option value="WASTE">
-                    Waste Management
-                  </option>
-
-                  <option value="OTHER">
-                    Other
-                  </option>
-
-                </select>
 
               </div>
 
             </section>
 
-            {/* DESCRIPTION */}
+            {/* ================= DESCRIPTION ================= */}
+
             <section className="challenge-card">
 
               <div className="card-heading">
@@ -1376,7 +1642,6 @@ function ReportIssue() {
                 </div>
 
                 <div>
-
                   <h2>
                     Describe the Challenge
                   </h2>
@@ -1385,7 +1650,6 @@ function ReportIssue() {
                     Explain the problem, its location,
                     affected people, and why it matters.
                   </p>
-
                 </div>
 
               </div>
@@ -1398,7 +1662,8 @@ function ReportIssue() {
                     setDescription(event.target.value)
                   }
                   placeholder="Describe the societal problem here..."
-                  rows={5}
+                  rows={6}
+                  maxLength={3000}
                 />
 
                 <div className="voice-controls">
@@ -1430,29 +1695,25 @@ function ReportIssue() {
 
                   {isListening && (
                     <div className="recording-indicator">
-
                       <span className="pulse-dot"></span>
-
                       Listening...
-
                     </div>
                   )}
 
                 </div>
 
                 <p className="voice-help">
-
                   You can type your description or use
                   the microphone to describe the challenge
                   naturally.
-
                 </p>
 
               </div>
 
             </section>
 
-            {/* IMAGE */}
+            {/* ================= MEDIA ================= */}
+
             <section className="challenge-card">
 
               <div className="card-heading">
@@ -1462,70 +1723,146 @@ function ReportIssue() {
                 </div>
 
                 <div>
-
                   <h2>
-                    Supporting Image
+                    Supporting Media
                   </h2>
 
                   <p>
-                    Add an image that helps explain
+                    Add visual evidence that helps explain
                     the real-world problem.
                   </p>
-
                 </div>
 
               </div>
 
-              {!imagePreview ? (
+              <div className="media-note">
+                <strong>Image required:</strong>{" "}
+                Upload a clear image related to the
+                challenge. You can also optionally add
+                a video.
+              </div>
 
-                <label className="upload-box">
+              {/* IMAGE */}
 
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png"
-                    onChange={handleImageChange}
-                    hidden
-                  />
+              <div className="field-group">
 
-                  <div className="upload-icon">
-                    <Camera size={28} />
-                  </div>
-
-                  <strong>
-                    Upload an image
-                  </strong>
-
-                  <span>
-                    JPG, JPEG or PNG
+                <label className="field-label">
+                  Challenge Image{" "}
+                  <span className="required">
+                    *
                   </span>
-
                 </label>
 
-              ) : (
+                {!imagePreview ? (
 
-                <div className="image-preview-wrapper">
+                  <label className="upload-box">
 
-                  <img
-                    src={imagePreview}
-                    alt="Selected challenge"
-                    className="issue-preview"
-                  />
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      onChange={handleImageChange}
+                      hidden
+                    />
 
-                  <button
-                    type="button"
-                    className="remove-image"
-                    onClick={removeImage}
-                  >
-                    <X size={18} />
-                  </button>
+                    <div className="upload-icon">
+                      <Camera size={28} />
+                    </div>
 
-                </div>
+                    <strong>
+                      Upload an image
+                    </strong>
 
-              )}
+                    <span>
+                      JPG, JPEG, PNG or WEBP
+                    </span>
+
+                  </label>
+
+                ) : (
+
+                  <div className="image-preview-wrapper">
+
+                    <img
+                      src={imagePreview}
+                      alt="Selected challenge"
+                      className="issue-preview"
+                    />
+
+                    <button
+                      type="button"
+                      className="remove-image"
+                      onClick={removeImage}
+                    >
+                      <X size={18} />
+                    </button>
+
+                  </div>
+
+                )}
+
+              </div>
+
+              {/* OPTIONAL VIDEO */}
+
+              <div className="field-group">
+
+                <label className="field-label">
+                  Optional Challenge Video
+                </label>
+
+                {!videoPreview ? (
+
+                  <label className="upload-box">
+
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime"
+                      onChange={handleVideoChange}
+                      hidden
+                    />
+
+                    <div className="upload-icon">
+                      <Video size={28} />
+                    </div>
+
+                    <strong>
+                      Upload a video
+                    </strong>
+
+                    <span>
+                      MP4, WEBM or MOV
+                    </span>
+
+                  </label>
+
+                ) : (
+
+                  <div className="video-preview-wrapper">
+
+                    <video
+                      src={videoPreview}
+                      controls
+                      className="video-preview"
+                    />
+
+                    <button
+                      type="button"
+                      className="remove-video"
+                      onClick={removeVideo}
+                    >
+                      <X size={18} />
+                    </button>
+
+                  </div>
+
+                )}
+
+              </div>
 
             </section>
 
-            {/* LOCATION */}
+            {/* ================= LOCATION ================= */}
+
             <section className="challenge-card">
 
               <div className="card-heading">
@@ -1535,7 +1872,6 @@ function ReportIssue() {
                 </div>
 
                 <div>
-
                   <h2>
                     Challenge Location
                   </h2>
@@ -1544,7 +1880,6 @@ function ReportIssue() {
                     The location helps ResolveX understand
                     where the problem exists.
                   </p>
-
                 </div>
 
               </div>
@@ -1585,7 +1920,8 @@ function ReportIssue() {
 
             </section>
 
-            {/* AI ANALYSIS */}
+            {/* ================= AI ================= */}
+
             <section className="challenge-card ai-card">
 
               <div className="ai-content">
@@ -1601,11 +1937,11 @@ function ReportIssue() {
                   </h3>
 
                   <p>
-                    After submission, ResolveX can
-                    analyze your challenge to identify
-                    its domain, priority, required
-                    expertise, technologies and potential
-                    impact.
+                    After submission, ResolveX automatically
+                    analyzes the challenge to identify its
+                    domain, priority, required expertise,
+                    technologies, keywords, impact level
+                    and innovation potential.
                   </p>
 
                   <div className="ai-points">
@@ -1623,11 +1959,15 @@ function ReportIssue() {
                     </span>
 
                     <span className="ai-tag">
-                      Technology
+                      Technologies
                     </span>
 
                     <span className="ai-tag">
-                      Impact
+                      Impact Level
+                    </span>
+
+                    <span className="ai-tag">
+                      Innovation Potential
                     </span>
 
                   </div>
@@ -1638,7 +1978,8 @@ function ReportIssue() {
 
             </section>
 
-            {/* ERROR */}
+            {/* ================= ERROR ================= */}
+
             {error && (
               <div className="form-message error-message">
 
@@ -1651,7 +1992,8 @@ function ReportIssue() {
               </div>
             )}
 
-            {/* SUCCESS */}
+            {/* ================= SUCCESS ================= */}
+
             {message && (
               <div className="form-message success-message">
 
@@ -1664,7 +2006,8 @@ function ReportIssue() {
               </div>
             )}
 
-            {/* SUBMIT */}
+            {/* ================= SUBMIT ================= */}
+
             <button
               type="submit"
               className="submit-challenge-button"

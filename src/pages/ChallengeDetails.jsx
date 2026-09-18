@@ -60,7 +60,7 @@ const ChallengeDetails = () => {
       style={{
         minHeight: "100vh",
         background:
-          "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
+          "linear-gradient(180deg, #0a1621ff 0%, #0a1723ff 100%),url(${monsoonBg})",
         padding: "32px",
         fontFamily:
           "Inter, Arial, Helvetica, sans-serif",

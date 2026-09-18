@@ -30,7 +30,7 @@ import api from "../services/api";
 import monsoonBg from "../assets/monsoon.jpg";
 
 function AdminDashboard() {
-  const [issues, setIssues] = useState([]);
+  const [challenges, setchallenges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -39,18 +39,21 @@ function AdminDashboard() {
      FETCH CHALLENGES
   ========================================================= */
 
-  const fetchIssues = async () => {
+  const fetchchallenges = async () => {
     try {
       setError("");
+const response = await api.get("/challenges");
 
-      const response = await api.get("/issues");
+console.log("CHALLENGES FROM BACKEND:", response.data);
 
-      console.log("DATA FROM BACKEND:", response.data);
+const fetchedChallenges = response.data?.challenges || [];
 
-      const fetchedIssues = response.data?.issues || [];
+setchallenges(
+  Array.isArray(fetchedChallenges) ? fetchedChallenges : []
+);
 
-      setIssues(
-        Array.isArray(fetchedIssues) ? fetchedIssues : []
+      setchallenges(
+        Array.isArray(fetchedChallenges) ? fetchedChallenges : []
       );
     } catch (err) {
       console.error("Failed to fetch data:", err);
@@ -66,12 +69,12 @@ function AdminDashboard() {
   };
 
   useEffect(() => {
-    fetchIssues();
+    fetchchallenges();
   }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchIssues();
+    await fetchchallenges();
   };
 
   /* =========================================================
@@ -148,13 +151,13 @@ function AdminDashboard() {
     ].includes(status);
   };
 
-  const totalChallenges = issues.length;
-  const validatedChallenges = issues.filter(isValidated).length;
-  const rejectedChallenges = issues.filter(isRejected).length;
-  const matchedChallenges = issues.filter(isMatched).length;
-  const activeProjects = issues.filter(isActiveProject).length;
-  const completedProjects = issues.filter(isCompletedProject).length;
-  const pendingReview = issues.filter(isPendingReview).length;
+  const totalChallenges = challenges.length;
+  const validatedChallenges = challenges.filter(isValidated).length;
+  const rejectedChallenges = challenges.filter(isRejected).length;
+  const matchedChallenges = challenges.filter(isMatched).length;
+  const activeProjects = challenges.filter(isActiveProject).length;
+  const completedProjects = challenges.filter(isCompletedProject).length;
+  const pendingReview = challenges.filter(isPendingReview).length;
 
   const percentage = (value) => {
     if (!totalChallenges) return 0;
@@ -328,7 +331,7 @@ function AdminDashboard() {
   const domainDistribution = useMemo(() => {
     const counts = {};
 
-    issues.forEach((issue) => {
+    challenges.forEach((issue) => {
       const domain = formatValue(getDomain(issue));
 
       counts[domain] = (counts[domain] || 0) + 1;
@@ -337,12 +340,12 @@ function AdminDashboard() {
     return Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 6);
-  }, [issues]);
+  }, [challenges]);
 
   const priorityDistribution = useMemo(() => {
     const counts = {};
 
-    issues.forEach((issue) => {
+    challenges.forEach((issue) => {
       const priority = formatValue(
         getPriority(issue),
         "Normal"
@@ -354,7 +357,7 @@ function AdminDashboard() {
     return Object.entries(counts).sort(
       (a, b) => b[1] - a[1]
     );
-  }, [issues]);
+  }, [challenges]);
 
   /* =========================================================
      PROJECT PROGRESS
@@ -503,7 +506,7 @@ function AdminDashboard() {
   const calculateMetric = (fields) => {
     let total = 0;
 
-    issues.forEach((issue) => {
+    challenges.forEach((issue) => {
       const value = getNumericValue(issue, fields);
 
       if (value !== null) {
@@ -539,7 +542,7 @@ function AdminDashboard() {
   const getUniqueCount = (fields) => {
     const values = new Set();
 
-    issues.forEach((issue) => {
+    challenges.forEach((issue) => {
       for (const field of fields) {
         const value = issue?.[field];
 
@@ -581,7 +584,7 @@ function AdminDashboard() {
      RECENT CHALLENGES
   ========================================================= */
 
-  const recentChallenges = [...issues]
+  const recentChallenges = [...challenges]
     .sort((a, b) => {
       const dateA = new Date(
         a.createdAt || a.created_at || 0
@@ -2027,7 +2030,7 @@ function AdminDashboard() {
                     <div className="review-actions">
 
                       <Link
-                        to="/admin/review"
+                        to="/challenges/:id"
                         className="action-link"
                       >
                         <span className="action-left">
