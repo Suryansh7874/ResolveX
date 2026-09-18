@@ -1,4 +1,4 @@
-const { GoogleGenAI } = require("@google/genai");
+const { GoogleGenAI,Type } = require("@google/genai");
 // const Department = require("../models/Department");
 
 const ai = new GoogleGenAI({
@@ -9,7 +9,7 @@ const ai = new GoogleGenAI({
 const testAI = async (req, res) => {
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-3.6-flash",
+            model: "gemini-2.5-flash",
             contents: "Say hello to the Civic Issue Tracker project in one sentence.",
         });
 
@@ -146,7 +146,7 @@ Return exactly this JSON structure:
 `;
 
     const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: "gemini-2.5-flash",
         contents: prompt,
     });
 

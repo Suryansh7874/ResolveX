@@ -41,6 +41,7 @@ const notificationSchema = new mongoose.Schema(
         "challenge_accepted",
         "challenge_rejected",
 
+        "proposal_created",
         "proposal_submitted",
         "proposal_approved",
         "proposal_rejected",

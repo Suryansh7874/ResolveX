@@ -1,6 +1,7 @@
 const HEI = require("../models/HEI");
 
 const Challenge = require("../models/Challenge");
+const createNotification = require("../utils/createNotification");
 
 // CREATE HEI
 const createHEI = async (req, res) => {
@@ -197,6 +198,24 @@ const acceptAssignedChallenge = async (req, res) => {
 
     await challenge.save();
 
+    //  Trigger Notification for the user who submitted the challenge
+    await createNotification({
+      userId: challenge.submittedBy,
+      type: "challenge_accepted",
+      message: `An HEI has accepted your challenge "${challenge.title}" and moved it to the project stage!`,
+      challengeId: challenge._id,
+    });
+
+    //  Trigger Notification for the Government/Admin who assigned it
+    if (challenge.assignedBy) {
+      await createNotification({
+        userId: challenge.assignedBy,
+        type: "challenge_accepted",
+        message: `HEI accepted the assignment for challenge "${challenge.title}".`,
+        challengeId: challenge._id,
+      });
+    }
+
     return res.status(200).json({
       success: true,
       message: "Challenge accepted successfully",
@@ -273,6 +292,15 @@ const rejectAssignedChallenge = async (req, res) => {
     // Government can decide whether to reassign it.
     await challenge.save();
 
+    //  Trigger Notification for the Government/Admin who assigned it
+    if (challenge.assignedBy) {
+      await createNotification({
+        userId: challenge.assignedBy,
+        type: "challenge_rejected",
+        message: `HEI rejected the assignment for challenge "${challenge.title}". Remarks: ${remarks}`,
+        challengeId: challenge._id,
+      });
+    }
     return res.status(200).json({
       success: true,
       message: "Challenge assignment rejected",

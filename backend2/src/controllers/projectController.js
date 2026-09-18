@@ -2,6 +2,8 @@ const Project = require("../models/Project");
 const Proposal = require("../models/Proposal");
 const Challenge = require("../models/Challenge");
 const ProjectTeam = require("../models/ProjectTeam");
+const createNotification = require("../utils/createNotification");
+
 
 const createProject = async (req, res) => {
   try {
@@ -109,6 +111,25 @@ const createProject = async (req, res) => {
         path: "facultyMentor",
         select: "name email role",
       });
+
+    //  Trigger Notification for the Faculty Mentor
+    await createNotification({
+      userId: facultyMentor,
+      type: "project_created",
+      message: `You have been assigned as Faculty Mentor for project "${project.title}".`,
+      projectId: project._id,
+      challengeId: proposal.challengeId,
+      proposalId: proposal._id,
+    });
+
+    //  Trigger Notification for the original challenge creator
+    await createNotification({
+      userId: challenge.submittedBy,
+      type: "project_created",
+      message: `A project has officially started for your challenge "${challenge.title}"!`,
+      projectId: project._id,
+      challengeId: proposal.challengeId,
+    });
 
     return res.status(201).json({
       success: true,

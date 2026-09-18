@@ -1,6 +1,7 @@
 const Challenge = require("../models/Challenge");
 const ProjectTeam = require("../models/ProjectTeam");
 const Proposal = require("../models/Proposal");
+const createNotification = require("../utils/createNotification");
 
 const createProposal = async (req, res) => {
   try {
@@ -160,6 +161,17 @@ const createProposal = async (req, res) => {
         select: "name email role",
       });
 
+
+    // Trigger Notification for proposal creator (Draft status)
+    await createNotification({
+      userId: req.user.id,
+      type: "proposal_created",
+      message: `Draft proposal "${title}" has been successfully created.`,
+      proposalId: proposal._id,
+      challengeId,
+    });
+
+
     return res.status(201).json({
       success: true,
       message: "Proposal created successfully",
@@ -228,8 +240,31 @@ const submitProposal = async (req, res) => {
         path: "submittedBy",
         select: "name email role",
       },
+      {
+        path: "challengeId",
+        select: "title domain status submittedBy",
+      },
     ]);
 
+    //  Trigger Notification for the HEI Submitter
+    await createNotification({
+      userId: proposal.submittedBy._id || proposal.submittedBy,
+      type: "proposal_submitted",
+      message: `Your proposal for challenge "${proposal.challengeId.title}" has been submitted for review.`,
+      proposalId: proposal._id,
+      challengeId: proposal.challengeId._id,
+    });
+
+    //  Trigger Notification for original Challenge Creator
+    if (proposal.challengeId?.submittedBy) {
+      await createNotification({
+        userId: proposal.challengeId.submittedBy,
+        type: "proposal_submitted",
+        message: `A new proposal has been submitted for your challenge "${proposal.challengeId.title}".`,
+        proposalId: proposal._id,
+        challengeId: proposal.challengeId._id,
+      });
+    }
     return res.status(200).json({
       message: "Proposal submitted successfully",
       proposal,
@@ -315,6 +350,16 @@ const reviewProposal = async (req, res) => {
       },
     ]);
 
+    //  Trigger Notification for the proposal submitter with review status
+    const formattedStatus = status.toLowerCase().replace("_", " ");
+    
+    await createNotification({
+      userId: proposal.submittedBy._id || proposal.submittedBy,
+      type: `proposal_${status.toLowerCase()}`,
+      message: `Your proposal for "${proposal.challengeId.title}" was ${formattedStatus}.${remarks ? ` Remarks: ${remarks}` : ""}`,
+      proposalId: proposal._id,
+      challengeId: proposal.challengeId._id,
+    });
     return res.status(200).json({
       message: `Proposal ${status.toLowerCase().replace("_", " ")} successfully`,
       proposal,

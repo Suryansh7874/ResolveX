@@ -4,6 +4,7 @@ const {
   findMatchingHEIs,
 } = require("../services/heiMatchingService");
 const HEI = require("../models/HEI");
+const createNotification = require("../utils/createNotification");
 
 // ==========================================
 // CREATE CHALLENGE
@@ -596,6 +597,16 @@ const validateChallenge = async (req, res) => {
 
     await challenge.save();
 
+    // Trigger Notification for the challenge submitter
+    await createNotification({
+      userId: challenge.submittedBy,
+      type: isValidated ? "challenge_updated" : "challenge_rejected",
+      message: isValidated
+        ? `Your challenge "${challenge.title}" has been validated.`
+        : `Your challenge "${challenge.title}" was rejected. Reason: ${rejectionReason || "Validation failed"}`,
+      challengeId: challenge._id,
+    });
+
     return res.status(200).json({
       success: true,
       message: isValidated
@@ -696,6 +707,14 @@ const assignChallengeToHEI = async (req, res) => {
     const populatedChallenge = await Challenge.findById(challenge._id)
       .populate("assignedHEI")
       .populate("assignedBy", "name email");
+
+      //  Trigger Notification for the challenge submitter
+    await createNotification({
+      userId: challenge.submittedBy,
+      type: "challenge_assigned",
+      message: `Your challenge "${challenge.title}" has been assigned to ${hei.name}.`,
+      challengeId: challenge._id,
+    });
 
     return res.status(200).json({
       success: true,
