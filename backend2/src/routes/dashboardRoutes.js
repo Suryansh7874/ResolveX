@@ -9,8 +9,8 @@ const {
     getStudentDashboard,
 } = require("../controllers/dashboardController");
 
-const authMiddleware = require("../middlewares/authMiddleware");
-const roleMiddleware = require("../middlewares/roleMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
+const roleMiddleware = require("../middleware/roleMiddleware");
 
 // Government Admin Dashboard (Government / System Admin)
 router.get(

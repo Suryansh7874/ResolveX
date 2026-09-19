@@ -401,11 +401,3 @@ module.exports = {
   getFacultyDashboard,
   getStudentDashboard,
 };
-
-module.exports = {
-  getGovernmentDashboard,
-  getHeiDashboard,
-  getCitizenDashboard,
-    getFacultyDashboard,
-    getStudentDashboard,
-};
