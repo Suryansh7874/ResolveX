@@ -81,13 +81,15 @@ const createProject = async (req, res) => {
       title: proposal.title,
       description: proposal.proposedSolution,
       status: "PLANNED",
-      startDate: startDate || null,
+      startDate: startDate || new Date(),
       endDate: endDate || null,
     });
 
     // 7. Update challenge status
     challenge.status = "IN_PROJECT";
     await challenge.save();
+    team.status = "ACTIVE";
+    await team.save();
 
     // 8. Return populated project
     const populatedProject = await Project.findById(project._id)

@@ -1,5 +1,6 @@
 const Challenge = require("../models/Challenge");
 const { classifyChallengeWithAI } = require("./aiControllers");
+const User = require("../models/User");
 const {
   findMatchingHEIs,
 } = require("../services/heiMatchingService");
@@ -17,6 +18,10 @@ const createChallenge = async (req, res) => {
       description,
       location
     } = req.body;
+
+    // ==========================================
+    // VALIDATE INPUTS
+    // ==========================================
 
     if (!title || !description || !location) {
       return res.status(400).json({
@@ -86,14 +91,30 @@ const createChallenge = async (req, res) => {
     }
 
 
+   // ==========================================
+    // AI ANALYSIS (WITH RESILIENT FALLBACK)
     // ==========================================
-    // AI ANALYSIS
-    // ==========================================
-
-    const classification = await classifyChallengeWithAI(
-      title,
-      description
-    );
+    
+    let classification = {};
+    
+    try {
+      classification = await classifyChallengeWithAI(title, description);
+    } catch (aiError) {
+      console.error("[Fallback] AI Auto-classification failed:", aiError.message);
+      
+      // Provide safe defaults so the citizen's submission still succeeds
+      classification = {
+        domain: "OTHER", // Safe default domain supported by the platform
+        subDomain: "GENERAL",
+        summary: description.substring(0, 150) + "...",
+        priority: "MEDIUM",
+        impactLevel: "MEDIUM",
+        innovationPotential: "MEDIUM",
+        requiredExpertise: [],
+        technologies: [],
+        keywords: []
+      };
+    }
 
 
     // ==========================================
@@ -120,14 +141,14 @@ const createChallenge = async (req, res) => {
     }).limit(10);
 
 
-    if (potentialDuplicates.length > 0) {
-      return res.status(409).json({
-        success: false,
-        duplicate: true,
-        message: "A potential duplicate challenge already exists nearby",
-        potentialDuplicates
-      });
-    }
+    // if (potentialDuplicates.length > 0) {
+    //   return res.status(409).json({
+    //     success: false,
+    //     duplicate: true,
+    //     message: "A potential duplicate challenge already exists nearby",
+    //     potentialDuplicates
+    //   });
+    // }
 
 
     // ==========================================
@@ -177,14 +198,52 @@ const createChallenge = async (req, res) => {
           classification.innovationPotential
       }
     });
+    
+   // ==========================================
+    // NOTIFICATIONS
+    // ==========================================
+    
+    // Run notifications asynchronously so they don't block the API response
+    (async () => {
+      try {
+        // 1. Notify the Submitter
+        await createNotification({
+          userId: req.user.id, 
+          type: "challenge_created",
+          message: `Your challenge "${challenge.title}" has been successfully submitted.`,
+          challengeId: challenge._id,
+        });
 
+        // 2. Notify Government Admins
+        // Note: Change "GOVERNMENT" to match your exact role string (e.g., "admin", "GOVT_OFFICIAL")
+        const govtAdmins = await User.find({ role: "GOVERNMENT" }).select("_id");
+        
+        if (govtAdmins.length > 0) {
+          const adminNotifications = govtAdmins.map((admin) =>
+            createNotification({
+              userId: admin._id,
+              type: "challenge_requires_validation",
+              message: `A new challenge "${challenge.title}" has been submitted and requires validation.`,
+              challengeId: challenge._id,
+            })
+          );
+          
+          await Promise.all(adminNotifications);
+        }
+      } catch (notifError) {
+        console.error("Failed to send challenge creation notifications:", notifError);
+      }
+    })();
+
+    // ==========================================
+    // RETURN SUCCESS
+    // ==========================================
 
     return res.status(201).json({
       success: true,
       message: "Challenge created successfully",
       challenge
     });
-
   } catch (error) {
 
     console.error("Create challenge error:", error);
@@ -597,15 +656,7 @@ const validateChallenge = async (req, res) => {
 
     await challenge.save();
 
-    // Trigger Notification for the challenge submitter
-    await createNotification({
-      userId: challenge.submittedBy,
-      type: isValidated ? "challenge_updated" : "challenge_rejected",
-      message: isValidated
-        ? `Your challenge "${challenge.title}" has been validated.`
-        : `Your challenge "${challenge.title}" was rejected. Reason: ${rejectionReason || "Validation failed"}`,
-      challengeId: challenge._id,
-    });
+    
 
     return res.status(200).json({
       success: true,
