@@ -24,7 +24,6 @@ const projectDocumentRoutes = require("./src/routes/projectdocRoutes");
 
 const dashboardRoutes = require("./src/routes/dashboardRoutes");
 
-app.use("/api/dashboards", dashboardRoutes);
 
 const app = express();
 
@@ -55,6 +54,9 @@ app.use("/api/voice", voiceRoute);
 app.use("/uploads", express.static("uploads"));
 
 app.use("/api/notifications", notificationRoutes);
+
+
+app.use("/api/dashboards", dashboardRoutes);
 
 
 app.get("/api/health", (req, res) => {
