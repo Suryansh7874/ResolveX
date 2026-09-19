@@ -22,6 +22,10 @@ const projectRoutes = require("./src/routes/projectRoutes");
 const milestoneRoutes = require("./src/routes/milestoneRoutes");
 const projectDocumentRoutes = require("./src/routes/projectdocRoutes");
 
+const dashboardRoutes = require("./src/routes/dashboardRoutes");
+
+app.use("/api/dashboards", dashboardRoutes);
+
 const app = express();
 
 app.use(helmet());

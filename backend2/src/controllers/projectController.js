@@ -149,6 +149,62 @@ const createProject = async (req, res) => {
   }
 };
 
+const completeProject = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { finalRemarks } = req.body;
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+
+    // 1. Ensure all milestones are approved before allowing project completion
+    const pendingMilestones = await Milestone.countDocuments({
+      projectId,
+      status: { $ne: "APPROVED" },
+    });
+
+    if (pendingMilestones > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot complete project. ${pendingMilestones} milestone(s) are still pending approval.`,
+      });
+    }
+
+    // 2. Update Project
+    project.status = "COMPLETED";
+    project.completedAt = new Date();
+    project.finalRemarks = finalRemarks || null;
+    await project.save();
+
+    // 3. Update Challenge to RESOLVED
+    const challenge = await Challenge.findById(project.challengeId);
+    if (challenge) {
+      challenge.status = "RESOLVED";
+      await challenge.save();
+
+      // 4. Notify Citizen Submitter
+      createNotification({
+        userId: challenge.submittedBy,
+        type: "challenge_resolved",
+        message: `Great news! The challenge "${challenge.title}" has been officially resolved!`,
+        challengeId: challenge._id,
+        projectId: project._id,
+      }).catch(console.error);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Project successfully completed and challenge marked as RESOLVED",
+      project,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   createProject,
+  completeProject,
 };
