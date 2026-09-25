@@ -30,36 +30,44 @@ import api from "../services/api";
 import monsoonBg from "../assets/monsoon.jpg";
 
 function AdminDashboard() {
-  const [challenges, setchallenges] = useState([]);
+  const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
   /* =========================================================
-     FETCH CHALLENGES
+     FETCH CHALLENGES FROM BACKEND
   ========================================================= */
 
-  const fetchchallenges = async () => {
+  const fetchChallenges = async () => {
     try {
       setError("");
-const response = await api.get("/challenges");
 
-console.log("CHALLENGES FROM BACKEND:", response.data);
+      const response = await api.get("/challenges");
 
-const fetchedChallenges = response.data?.challenges || [];
+      console.log("CHALLENGES FROM BACKEND:", response.data);
 
-setchallenges(
-  Array.isArray(fetchedChallenges) ? fetchedChallenges : []
-);
+      if (response.data?.success === false) {
+        throw new Error(
+          response.data?.message || "Failed to fetch challenges"
+        );
+      }
 
-      setchallenges(
-        Array.isArray(fetchedChallenges) ? fetchedChallenges : []
+      const fetchedChallenges = response.data?.challenges || [];
+
+      setChallenges(
+        Array.isArray(fetchedChallenges)
+          ? fetchedChallenges
+          : []
       );
     } catch (err) {
-      console.error("Failed to fetch data:", err);
+      console.error("Failed to fetch challenges:", err);
+
+      setChallenges([]);
 
       setError(
         err.response?.data?.message ||
+          err.message ||
           "Failed to fetch challenges. Please try again."
       );
     } finally {
@@ -69,12 +77,12 @@ setchallenges(
   };
 
   useEffect(() => {
-    fetchchallenges();
+    fetchChallenges();
   }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchchallenges();
+    await fetchChallenges();
   };
 
   /* =========================================================
@@ -87,77 +95,74 @@ setchallenges(
       .toLowerCase()
       .replace(/[\s-]+/g, "_");
 
-  const isValidated = (issue) => {
-    const status = normalizeStatus(issue?.status);
+  /*
+    These are based on the actual Challenge controller:
 
-    return [
+    VALIDATED
+    REJECTED
+    MATCHED
+    IN_PROJECT
+    RESOLVED
+  */
+
+  const isValidated = (challenge) => {
+    return normalizeStatus(challenge?.status) === "validated";
+  };
+
+  const isRejected = (challenge) => {
+    return normalizeStatus(challenge?.status) === "rejected";
+  };
+
+  const isMatched = (challenge) => {
+    return normalizeStatus(challenge?.status) === "matched";
+  };
+
+  const isActiveProject = (challenge) => {
+    return normalizeStatus(challenge?.status) === "in_project";
+  };
+
+  const isCompletedProject = (challenge) => {
+    return normalizeStatus(challenge?.status) === "resolved";
+  };
+
+  /*
+    Anything that has not yet moved to one of the later lifecycle
+    states is treated as pending review.
+
+    This matches the current backend lifecycle where a newly created
+    challenge has not yet been validated/rejected.
+  */
+  const isPendingReview = (challenge) => {
+    const status = normalizeStatus(challenge?.status);
+
+    return ![
       "validated",
-      "verified",
-      "approved",
-      "government_validated",
-    ].includes(status);
-  };
-
-  const isRejected = (issue) => {
-    const status = normalizeStatus(issue?.status);
-
-    return ["rejected", "declined"].includes(status);
-  };
-
-  const isMatched = (issue) => {
-    const status = normalizeStatus(issue?.status);
-
-    return [
+      "rejected",
       "matched",
-      "allocated",
-      "assigned",
-      "team_formed",
-      "teamformed",
-    ].includes(status);
-  };
-
-  const isActiveProject = (issue) => {
-    const status = normalizeStatus(issue?.status);
-
-    return [
-      "active_project",
-      "project_active",
-      "in_progress",
-      "inprogress",
-      "pilot",
-    ].includes(status);
-  };
-
-  const isCompletedProject = (issue) => {
-    const status = normalizeStatus(issue?.status);
-
-    return [
-      "completed",
-      "project_completed",
-      "closed",
+      "in_project",
       "resolved",
     ].includes(status);
   };
 
-  const isPendingReview = (issue) => {
-    const status = normalizeStatus(issue?.status);
-
-    return [
-      "reported",
-      "pending",
-      "submitted",
-      "pending_review",
-      "under_review",
-    ].includes(status);
-  };
-
   const totalChallenges = challenges.length;
-  const validatedChallenges = challenges.filter(isValidated).length;
-  const rejectedChallenges = challenges.filter(isRejected).length;
-  const matchedChallenges = challenges.filter(isMatched).length;
-  const activeProjects = challenges.filter(isActiveProject).length;
-  const completedProjects = challenges.filter(isCompletedProject).length;
-  const pendingReview = challenges.filter(isPendingReview).length;
+
+  const validatedChallenges =
+    challenges.filter(isValidated).length;
+
+  const rejectedChallenges =
+    challenges.filter(isRejected).length;
+
+  const matchedChallenges =
+    challenges.filter(isMatched).length;
+
+  const activeProjects =
+    challenges.filter(isActiveProject).length;
+
+  const completedProjects =
+    challenges.filter(isCompletedProject).length;
+
+  const pendingReview =
+    challenges.filter(isPendingReview).length;
 
   const percentage = (value) => {
     if (!totalChallenges) return 0;
@@ -175,164 +180,79 @@ setchallenges(
   const getStatusLabel = (status) => {
     const normalized = normalizeStatus(status);
 
-    if (
-      [
-        "reported",
-        "pending",
-        "submitted",
-        "pending_review",
-        "under_review",
-      ].includes(normalized)
-    ) {
-      return "Pending Review";
-    }
+    switch (normalized) {
+      case "validated":
+        return "Validated";
 
-    if (
-      [
-        "validated",
-        "verified",
-        "approved",
-        "government_validated",
-      ].includes(normalized)
-    ) {
-      return "Validated";
-    }
+      case "rejected":
+        return "Rejected";
 
-    if (["rejected", "declined"].includes(normalized)) {
-      return "Rejected";
-    }
+      case "matched":
+        return "Assigned";
 
-    if (
-      [
-        "matched",
-        "allocated",
-        "assigned",
-        "team_formed",
-        "teamformed",
-      ].includes(normalized)
-    ) {
-      return "Assigned";
-    }
+      case "in_project":
+        return "Active Project";
 
-    if (
-      [
-        "in_progress",
-        "inprogress",
-        "active_project",
-        "project_active",
-        "pilot",
-      ].includes(normalized)
-    ) {
-      return "Active Project";
-    }
+      case "resolved":
+        return "Completed";
 
-    if (
-      [
-        "completed",
-        "project_completed",
-        "closed",
-        "resolved",
-      ].includes(normalized)
-    ) {
-      return "Completed";
+      default:
+        return "Pending Review";
     }
-
-    return status || "Unknown";
   };
 
   const getStatusClass = (status) => {
     const normalized = normalizeStatus(status);
 
-    if (
-      [
-        "reported",
-        "pending",
-        "submitted",
-        "pending_review",
-        "under_review",
-      ].includes(normalized)
-    ) {
-      return "status-pending";
-    }
+    switch (normalized) {
+      case "validated":
+        return "status-validated";
 
-    if (
-      [
-        "validated",
-        "verified",
-        "approved",
-        "government_validated",
-      ].includes(normalized)
-    ) {
-      return "status-validated";
-    }
+      case "rejected":
+        return "status-rejected";
 
-    if (["rejected", "declined"].includes(normalized)) {
-      return "status-rejected";
-    }
+      case "matched":
+        return "status-matched";
 
-    if (
-      [
-        "matched",
-        "allocated",
-        "assigned",
-        "team_formed",
-        "teamformed",
-      ].includes(normalized)
-    ) {
-      return "status-matched";
-    }
+      case "in_project":
+        return "status-active";
 
-    if (
-      [
-        "in_progress",
-        "inprogress",
-        "active_project",
-        "project_active",
-        "pilot",
-      ].includes(normalized)
-    ) {
-      return "status-active";
-    }
+      case "resolved":
+        return "status-completed";
 
-    if (
-      [
-        "completed",
-        "project_completed",
-        "closed",
-        "resolved",
-      ].includes(normalized)
-    ) {
-      return "status-completed";
+      default:
+        return "status-pending";
     }
-
-    return "status-default";
   };
 
   /* =========================================================
      DOMAIN / PRIORITY
   ========================================================= */
 
-  const getDomain = (issue) =>
-    issue?.domain ||
-    issue?.category ||
-    issue?.aiAnalysis?.domain ||
+  const getDomain = (challenge) =>
+    challenge?.domain ||
+    challenge?.aiAnalysis?.domain ||
     "Other";
 
-  const getPriority = (issue) =>
-    issue?.priority ||
-    issue?.aiAnalysis?.priority ||
+  const getPriority = (challenge) =>
+    challenge?.priority ||
+    challenge?.aiAnalysis?.priority ||
     "Normal";
 
   const formatValue = (value, fallback = "Other") =>
     String(value || fallback)
       .replace(/_/g, " ")
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+      .replace(/\b\w/g, (letter) =>
+        letter.toUpperCase()
+      );
 
   const domainDistribution = useMemo(() => {
     const counts = {};
 
-    challenges.forEach((issue) => {
-      const domain = formatValue(getDomain(issue));
+    challenges.forEach((challenge) => {
+      const domain = formatValue(
+        getDomain(challenge)
+      );
 
       counts[domain] = (counts[domain] || 0) + 1;
     });
@@ -345,13 +265,14 @@ setchallenges(
   const priorityDistribution = useMemo(() => {
     const counts = {};
 
-    challenges.forEach((issue) => {
+    challenges.forEach((challenge) => {
       const priority = formatValue(
-        getPriority(issue),
+        getPriority(challenge),
         "Normal"
       );
 
-      counts[priority] = (counts[priority] || 0) + 1;
+      counts[priority] =
+        (counts[priority] || 0) + 1;
     });
 
     return Object.entries(counts).sort(
@@ -399,6 +320,7 @@ setchallenges(
     const classified =
       pendingReview +
       validatedChallenges +
+      rejectedChallenges +
       matchedChallenges +
       activeProjects +
       completedProjects;
@@ -418,6 +340,11 @@ setchallenges(
         label: "Validated",
         value: validatedChallenges,
         color: "#4ade80",
+      },
+      {
+        label: "Rejected",
+        value: rejectedChallenges,
+        color: "#f87171",
       },
       {
         label: "Matched",
@@ -443,6 +370,7 @@ setchallenges(
   }, [
     pendingReview,
     validatedChallenges,
+    rejectedChallenges,
     matchedChallenges,
     activeProjects,
     completedProjects,
@@ -480,9 +408,9 @@ setchallenges(
      IMPACT METRICS
   ========================================================= */
 
-  const getNumericValue = (issue, fields) => {
+  const getNumericValue = (challenge, fields) => {
     for (const field of fields) {
-      const value = issue?.[field];
+      const value = challenge?.[field];
 
       if (
         typeof value === "number" &&
@@ -506,8 +434,11 @@ setchallenges(
   const calculateMetric = (fields) => {
     let total = 0;
 
-    challenges.forEach((issue) => {
-      const value = getNumericValue(issue, fields);
+    challenges.forEach((challenge) => {
+      const value = getNumericValue(
+        challenge,
+        fields
+      );
 
       if (value !== null) {
         total += value;
@@ -542,15 +473,22 @@ setchallenges(
   const getUniqueCount = (fields) => {
     const values = new Set();
 
-    challenges.forEach((issue) => {
+    challenges.forEach((challenge) => {
       for (const field of fields) {
-        const value = issue?.[field];
+        const value = challenge?.[field];
 
         if (value) {
           if (Array.isArray(value)) {
             value.forEach((item) => {
-              if (item) values.add(String(item));
+              if (item) {
+                values.add(String(item));
+              }
             });
+          } else if (
+            typeof value === "object" &&
+            value?._id
+          ) {
+            values.add(String(value._id));
           } else {
             values.add(String(value));
           }
@@ -564,6 +502,7 @@ setchallenges(
   };
 
   const heiParticipation = getUniqueCount([
+    "assignedHEI",
     "heiId",
     "institutionId",
     "hei",
@@ -587,11 +526,11 @@ setchallenges(
   const recentChallenges = [...challenges]
     .sort((a, b) => {
       const dateA = new Date(
-        a.createdAt || a.created_at || 0
+        a?.createdAt || 0
       ).getTime();
 
       const dateB = new Date(
-        b.createdAt || b.created_at || 0
+        b?.createdAt || 0
       ).getTime();
 
       return dateB - dateA;
@@ -614,22 +553,51 @@ setchallenges(
     });
   };
 
-  const getChallengeTitle = (issue) =>
-    issue?.title ||
-    issue?.name ||
-    issue?.description ||
+  const getChallengeTitle = (challenge) =>
+    challenge?.title ||
+    challenge?.name ||
+    challenge?.description ||
     "Untitled Challenge";
 
-  const getLocation = (issue) => {
-    if (typeof issue?.location === "string") {
-      return issue.location;
+  const getLocation = (challenge) => {
+    const location = challenge?.location;
+
+    if (!location) {
+      return "Location not available";
     }
 
-    return (
-      issue?.location?.address ||
-      issue?.location?.name ||
-      "Location not available"
-    );
+    if (typeof location === "string") {
+      return location;
+    }
+
+    if (location?.address) {
+      return location.address;
+    }
+
+    if (location?.name) {
+      return location.name;
+    }
+
+    /*
+      Backend currently stores location as GeoJSON:
+
+      {
+        type: "Point",
+        coordinates: [longitude, latitude]
+      }
+    */
+
+    if (
+      Array.isArray(location?.coordinates) &&
+      location.coordinates.length >= 2
+    ) {
+      const [longitude, latitude] =
+        location.coordinates;
+
+      return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+    }
+
+    return "Location not available";
   };
 
   /* =========================================================
@@ -828,10 +796,6 @@ setchallenges(
           font-size: 13px;
         }
 
-        /* =====================================================
-           STAT CARDS
-        ===================================================== */
-
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -937,10 +901,6 @@ setchallenges(
           font-size: 12px;
           font-weight: 700;
         }
-
-        /* =====================================================
-           PANELS
-        ===================================================== */
 
         .panel,
         .analytics-card,
@@ -1207,10 +1167,6 @@ setchallenges(
           color: #cbd5e1;
         }
 
-        /* =====================================================
-           ANALYTICS
-        ===================================================== */
-
         .section {
           margin-bottom: 28px;
         }
@@ -1244,10 +1200,6 @@ setchallenges(
         .analytics-card.full-width {
           grid-column: span 2;
         }
-
-        /* =====================================================
-           CHALLENGE + PROJECT PROGRESS SAME ROW
-        ===================================================== */
 
         .progress-cards-row {
           display: grid;
@@ -1345,10 +1297,6 @@ setchallenges(
           font-size: 12px;
         }
 
-        /* =====================================================
-           PROJECT PROGRESS
-        ===================================================== */
-
         .project-progress {
           display: grid;
           gap: 14px;
@@ -1406,10 +1354,6 @@ setchallenges(
         .progress-completed {
           background: #34d399;
         }
-
-        /* =====================================================
-           CIRCULAR PROGRESS CHART
-        ===================================================== */
 
         .progress-chart-layout {
           display: grid;
@@ -1524,10 +1468,6 @@ setchallenges(
           font-weight: 800;
         }
 
-        /* =====================================================
-           ECOSYSTEM
-        ===================================================== */
-
         .ecosystem-grid {
           display: grid;
           grid-template-columns: repeat(2,1fr);
@@ -1583,10 +1523,6 @@ setchallenges(
           font-size: 11px;
           line-height: 1.65;
         }
-
-        /* =====================================================
-           IMPACT
-        ===================================================== */
 
         .impact-grid {
           display: grid;
@@ -1649,10 +1585,6 @@ setchallenges(
           font-size: 9px;
           line-height: 1.45;
         }
-
-        /* =====================================================
-           QUICK ACTIONS
-        ===================================================== */
 
         .quick-actions {
           display: grid;
@@ -1740,10 +1672,6 @@ setchallenges(
           margin: 0;
           font-size: 13px;
         }
-
-        /* =====================================================
-           RESPONSIVE
-        ===================================================== */
 
         @media (max-width: 1100px) {
           .stats-grid {
@@ -2030,7 +1958,7 @@ setchallenges(
                     <div className="review-actions">
 
                       <Link
-                        to="/challenges/:id"
+                        to="/admin/review"
                         className="action-link"
                       >
                         <span className="action-left">
@@ -2111,61 +2039,66 @@ setchallenges(
                         No challenges available.
                       </div>
                     ) : (
-                      recentChallenges.map((issue, index) => (
+                      recentChallenges.map(
+                        (challenge, index) => (
 
-                        <div
-                          className="challenge-item"
-                          key={
-                            issue?._id ||
-                            issue?.id ||
-                            index
-                          }
-                        >
+                          <div
+                            className="challenge-item"
+                            key={
+                              challenge?._id ||
+                              challenge?.id ||
+                              index
+                            }
+                          >
 
-                          <div>
+                            <div>
 
-                            <div className="challenge-title">
-                              {getChallengeTitle(issue)}
+                              <div className="challenge-title">
+                                {getChallengeTitle(
+                                  challenge
+                                )}
+                              </div>
+
+                              <div className="challenge-meta">
+
+                                <span>
+                                  <Layers3 size={10} />
+                                  {formatValue(
+                                    getDomain(challenge)
+                                  )}
+                                </span>
+
+                                <span>
+                                  <MapPin size={10} />
+                                  {getLocation(
+                                    challenge
+                                  )}
+                                </span>
+
+                                <span>
+                                  {formatDate(
+                                    challenge?.createdAt
+                                  )}
+                                </span>
+
+                              </div>
+
                             </div>
 
-                            <div className="challenge-meta">
-
-                              <span>
-                                <Layers3 size={10} />
-                                {formatValue(
-                                  getDomain(issue)
-                                )}
-                              </span>
-
-                              <span>
-                                <MapPin size={10} />
-                                {getLocation(issue)}
-                              </span>
-
-                              <span>
-                                {formatDate(
-                                  issue?.createdAt ||
-                                  issue?.created_at
-                                )}
-                              </span>
-
-                            </div>
+                            <span
+                              className={`status-badge ${getStatusClass(
+                                challenge?.status
+                              )}`}
+                            >
+                              {getStatusLabel(
+                                challenge?.status
+                              )}
+                            </span>
 
                           </div>
 
-                          <span
-                            className={`status-badge ${getStatusClass(
-                              issue?.status
-                            )}`}
-                          >
-                            {getStatusLabel(
-                              issue?.status
-                            )}
-                          </span>
-
-                        </div>
-
-                      ))
+                        )
+                      )
                     )}
 
                   </div>
@@ -2260,12 +2193,13 @@ setchallenges(
                         {priorityDistribution.map(
                           ([priority, value]) => {
 
-                            const maxValue = Math.max(
-                              ...priorityDistribution.map(
-                                ([, count]) => count
-                              ),
-                              1
-                            );
+                            const maxValue =
+                              Math.max(
+                                ...priorityDistribution.map(
+                                  ([, count]) => count
+                                ),
+                                1
+                              );
 
                             const width =
                               (value / maxValue) * 100;
@@ -2341,36 +2275,40 @@ setchallenges(
 
                         <div className="progress-legend">
 
-                          {progressChartData.map((item) => (
+                          {progressChartData.map(
+                            (item) => (
 
-                            <div
-                              className="progress-legend-item"
-                              key={item.label}
-                            >
+                              <div
+                                className="progress-legend-item"
+                                key={item.label}
+                              >
 
-                              <span
-                                className="progress-legend-dot"
-                                style={{
-                                  background: item.color,
-                                  color: item.color,
-                                }}
-                              />
+                                <span
+                                  className="progress-legend-dot"
+                                  style={{
+                                    background:
+                                      item.color,
+                                    color:
+                                      item.color,
+                                  }}
+                                />
 
-                              <div className="progress-legend-content">
+                                <div className="progress-legend-content">
 
-                                <div className="progress-legend-label">
-                                  {item.label}
+                                  <div className="progress-legend-label">
+                                    {item.label}
+                                  </div>
+
+                                </div>
+
+                                <div className="progress-legend-value">
+                                  {item.value}
                                 </div>
 
                               </div>
 
-                              <div className="progress-legend-value">
-                                {item.value}
-                              </div>
-
-                            </div>
-
-                          ))}
+                            )
+                          )}
 
                         </div>
 
@@ -2392,37 +2330,39 @@ setchallenges(
 
                       <div className="project-progress">
 
-                        {projectProgress.map((item) => (
+                        {projectProgress.map(
+                          (item) => (
 
-                          <div
-                            className="project-progress-row"
-                            key={item.label}
-                          >
+                            <div
+                              className="project-progress-row"
+                              key={item.label}
+                            >
 
-                            <span className="project-progress-label">
-                              {item.label}
-                            </span>
+                              <span className="project-progress-label">
+                                {item.label}
+                              </span>
 
-                            <div className="progress-bar">
+                              <div className="progress-bar">
 
-                              <div
-                                className={`progress-bar-fill ${item.className}`}
-                                style={{
-                                  width: `${percentage(
-                                    item.value
-                                  )}%`,
-                                }}
-                              />
+                                <div
+                                  className={`progress-bar-fill ${item.className}`}
+                                  style={{
+                                    width: `${percentage(
+                                      item.value
+                                    )}%`,
+                                  }}
+                                />
+
+                              </div>
+
+                              <span className="project-progress-value">
+                                {item.value}
+                              </span>
 
                             </div>
 
-                            <span className="project-progress-value">
-                              {item.value}
-                            </span>
-
-                          </div>
-
-                        ))}
+                          )
+                        )}
 
                       </div>
 
