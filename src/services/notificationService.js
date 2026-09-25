@@ -2,30 +2,25 @@ import api from "./api";
 
 // Get notifications for the logged-in user
 export const getNotifications = async () => {
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  if (!user || !user.id) {
-    return {
-      count: 0,
-      notifications: [],
-    };
+  try {
+    const response = await api.get("/notifications");
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch notifications:", error);
+    throw error;
   }
-
-  const response = await api.get("/notifications", {
-    params: {
-      userId: user.id,
-    },
-  });
-
-  return response.data;
 };
-
 
 // Mark a notification as read
 export const markNotificationAsRead = async (notificationId) => {
-  const response = await api.patch(
-    `/notifications/${notificationId}/read`
-  );
+  try {
+    const response = await api.patch(
+      `/notifications/${notificationId}/read`
+    );
 
-  return response.data;
+    return response.data;
+  } catch (error) {
+    console.error("Failed to mark notification as read:", error);
+    throw error;
+  }
 };

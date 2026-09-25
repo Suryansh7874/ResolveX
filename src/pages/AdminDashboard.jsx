@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 
 import api from "../services/api";
-import monsoonBg from "../assets/monsoon.jpg";
+
 import axios from "axios";
 
 function AdminDashboard() {
@@ -635,16 +635,17 @@ function AdminDashboard() {
           font-family: "Manrope", Arial, sans-serif;
 
           background:
-            linear-gradient(
-              135deg,
-              rgba(5, 15, 27, 0.76),
-              rgba(9, 24, 40, 0.82)
+            radial-gradient(
+              circle at 85% 0%,
+              rgba(37, 99, 235, 0.10),
+              transparent 28%
             ),
-            url(${monsoonBg});
-
-          background-size: cover;
-          background-position: center;
-          background-attachment: fixed;
+            radial-gradient(
+              circle at 10% 20%,
+              rgba(124, 58, 237, 0.07),
+              transparent 25%
+            ),
+            #03070d;
         }
 
         .admin-container {
@@ -676,7 +677,7 @@ function AdminDashboard() {
           background: rgba(15,23,42,.42);
           backdrop-filter: blur(18px);
           color: #bfdbfe;
-          font-size: 10px;
+          font-size: 11px;
           font-weight: 800;
           letter-spacing: 1.5px;
           text-transform: uppercase;
@@ -718,7 +719,7 @@ function AdminDashboard() {
           background: rgba(15,23,42,.48);
           color: #fff;
           font-family: inherit;
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 800;
           cursor: pointer;
           backdrop-filter: blur(16px);
@@ -860,7 +861,7 @@ function AdminDashboard() {
 
         .stat-label {
           color: rgba(226,232,240,.76);
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 700;
         }
 
@@ -919,8 +920,8 @@ function AdminDashboard() {
         .panel .panel-description {
           margin: 3px 0 0;
           color: rgba(255,255,255,.78) !important;
-          font-size: 11px;
-          line-height: 1.5;
+          font-size: 12px;
+          line-height: 1.55;
         }
 
         .view-link {
@@ -1006,7 +1007,7 @@ function AdminDashboard() {
           background: rgba(255,255,255,.035);
           color: #e2e8f0;
           text-decoration: none;
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 700;
           transition: .2s ease;
         }
@@ -1060,7 +1061,7 @@ function AdminDashboard() {
         .challenge-title {
           margin-bottom: 7px;
           color: #fff;
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 800;
           white-space: nowrap;
           overflow: hidden;
@@ -1207,7 +1208,7 @@ function AdminDashboard() {
 
         .distribution-label {
           color: rgba(226,232,240,.82);
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 700;
           white-space: nowrap;
           overflow: hidden;
@@ -1268,7 +1269,7 @@ function AdminDashboard() {
 
         .project-progress-label {
           color: rgba(226,232,240,.82);
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 700;
         }
 
@@ -1437,7 +1438,7 @@ function AdminDashboard() {
         .ecosystem-title {
           margin-bottom: 5px;
           color: #fff;
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 800;
         }
 
@@ -1521,6 +1522,16 @@ function AdminDashboard() {
           border-color: rgba(147,197,253,.22);
         }
 
+        .hei-management-action .quick-action-icon {
+          background: rgba(124,58,237,.10);
+          color: #c4b5fd;
+        }
+
+        .hei-management-action:hover {
+          border-color: rgba(167,139,250,.30);
+          box-shadow: 0 16px 40px rgba(124,58,237,.08);
+        }
+
         .quick-action-icon {
           width: 40px;
           height: 40px;
@@ -1539,14 +1550,14 @@ function AdminDashboard() {
 
         .quick-action-title {
           margin-bottom: 4px;
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 800;
         }
 
         .quick-action-description {
           color: rgba(226,232,240,.68);
-          font-size: 11px;
-          line-height: 1.5;
+          font-size: 12px;
+          line-height: 1.55;
         }
 
         .quick-action-arrow {
@@ -1616,7 +1627,6 @@ function AdminDashboard() {
         @media (max-width: 650px) {
           .admin-page {
             padding: 28px 15px 55px;
-            background-attachment: scroll;
           }
 
           .dashboard-header {
@@ -2434,6 +2444,30 @@ function AdminDashboard() {
 
                       <div className="quick-action-description">
                         Match challenges with institutions
+                      </div>
+                    </div>
+
+                    <ChevronRight
+                      size={15}
+                      className="quick-action-arrow"
+                    />
+                  </Link>
+
+                  <Link
+                    to="/admin/hei-management"
+                    className="quick-action hei-management-action"
+                  >
+                    <div className="quick-action-icon">
+                      <Building2 size={18} />
+                    </div>
+
+                    <div className="quick-action-content">
+                      <div className="quick-action-title">
+                        HEI Management
+                      </div>
+
+                      <div className="quick-action-description">
+                        Register and manage higher education institutions
                       </div>
                     </div>
 

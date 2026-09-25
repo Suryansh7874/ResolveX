@@ -22,6 +22,7 @@ import LandingPage from "./pages/LandingPage";
 
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminIssues from "./pages/AdminIssues";
+import HEIManagement from "./pages/HEIManagement";
 
 import OfficerDashboard from "./pages/OfficerDashboard";
 import Officers from "./pages/Officers";
@@ -112,6 +113,12 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* ================= HEI MANAGEMENT ================= */}
+
+        <Route path="/admin/hei-management" element={<ProtectedRoute><HEIManagement /></ProtectedRoute>} />
+        <Route path="/admin/hei-management/register" element={<ProtectedRoute><HEIManagement /></ProtectedRoute>} />
+        <Route path="/admin/hei-management/register-admin" element={<ProtectedRoute><HEIManagement /></ProtectedRoute>} />
 
         {/* ================= ADMIN ISSUES ================= */}
 
