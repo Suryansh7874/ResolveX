@@ -5,11 +5,11 @@ import {
   Navigate,
 } from "react-router-dom";
 
-
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
+
 import Dashboard from "./pages/Dashboard";
 import ChallengeDetails from "./pages/ChallengeDetails";
 import HEIDashboard from "./pages/HEIDashboard";
@@ -23,19 +23,15 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminIssues from "./pages/AdminIssues";
 
 import OfficerDashboard from "./pages/OfficerDashboard";
-
 import Officers from "./pages/Officers";
 
 import ReportIssue from "./pages/ReportIssue";
 import MyIssues from "./pages/MyIssues";
 
-
 function App() {
   return (
     <BrowserRouter>
 
-      {/* ================= NORMAL NAVBAR ================= */}
-      {/* Hidden automatically on Landing Page (/) */}
       <Navbar />
 
       <Routes>
@@ -46,7 +42,6 @@ function App() {
           path="/"
           element={<LandingPage />}
         />
-
 
         {/* ================= PUBLIC ROUTES ================= */}
 
@@ -70,7 +65,6 @@ function App() {
           element={<ResetPassword />}
         />
 
-
         {/* ================= CITIZEN DASHBOARD ================= */}
 
         <Route
@@ -81,7 +75,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
 
         {/* ================= REPORT ISSUE ================= */}
 
@@ -94,7 +87,6 @@ function App() {
           }
         />
 
-
         {/* ================= MY ISSUES ================= */}
 
         <Route
@@ -105,10 +97,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-
-       
-
 
         {/* ================= ADMIN DASHBOARD ================= */}
 
@@ -121,7 +109,6 @@ function App() {
           }
         />
 
-
         {/* ================= ADMIN ISSUES ================= */}
 
         <Route
@@ -132,7 +119,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
 
         {/* ================= ADMIN OFFICERS ================= */}
 
@@ -145,7 +131,6 @@ function App() {
           }
         />
 
-
         {/* ================= OFFICER DASHBOARD ================= */}
 
         <Route
@@ -156,26 +141,60 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         {/* ================= HEI ADMIN DASHBOARD ================= */}
 
         <Route
           path="/hei"
-          element={<HEIDashboard />}
+          element={
+            <ProtectedRoute>
+              <HEIDashboard />
+            </ProtectedRoute>
+          }
         />
 
-        {/* ================= CHALLENGE DETAILS ================= */}
+        {/* =====================================================
+            CHALLENGE DETAILS
+            Used by Admin Dashboard when a challenge is clicked
+        ===================================================== */}
 
         <Route
           path="/challenges/:id"
-          element={<ChallengeDetails />}
+          element={
+            <ProtectedRoute>
+              <ChallengeDetails />
+            </ProtectedRoute>
+          }
         />
 
+        {/* =====================================================
+            OPTIONAL ADMIN CHALLENGE DETAILS ALIAS
+
+            This lets us later use:
+            /admin/challenges/:id
+
+            without creating another component.
+        ===================================================== */}
+
+        <Route
+          path="/admin/challenges/:id"
+          element={
+            <ProtectedRoute>
+              <ChallengeDetails />
+            </ProtectedRoute>
+          }
+        />
 
         {/* ================= UNKNOWN ROUTES ================= */}
 
         <Route
           path="*"
-          element={<Navigate to="/" replace />}
+          element={
+            <Navigate
+              to="/"
+              replace
+            />
+          }
         />
 
       </Routes>

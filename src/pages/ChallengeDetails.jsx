@@ -1,791 +1,873 @@
-import React from "react";
+import { useEffect, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import {
+  ArrowLeft,
+  MapPin,
+  Calendar,
+  ShieldCheck,
+  Sparkles,
+  Layers3,
+  Flag,
+} from "lucide-react";
 
-const ChallengeDetails = () => {
-  const challenge = {
-    id: "RX-2026-001",
-    title: "Reducing Plastic Waste in Urban Areas",
-    domain: "Environment",
-    status: "Under Review",
-    submittedBy: "Citizen",
-    submittedOn: "12 September 2026",
-    location: "Prayagraj, Uttar Pradesh",
+import api from "../services/api";
+import monsoon from "../assets/monsoon.jpg";
 
-    description:
-      "Urban areas are facing increasing challenges due to plastic waste. This challenge aims to identify practical and technology-driven solutions for reducing plastic waste, improving waste collection and encouraging sustainable practices.",
+function ChallengeDetails() {
+  const { id } = useParams();
 
-    subDomain: "Waste Management",
-    priority: "High",
-    impact: "High",
-    innovation: "Medium",
+  const [challenge, setChallenge] = useState(null);
+  const [locationName, setLocationName] = useState("Loading location...");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-    expertise: [
-      "Artificial Intelligence",
-      "IoT",
-      "Environmental Science",
-    ],
+  useEffect(() => {
+    const fetchChallenge = async () => {
+      try {
+        const res = await api.get(`/challenges/${id}`);
 
-    technologies: ["AI/ML", "IoT", "Data Analytics"],
-  };
+        console.log("CHALLENGE DETAILS:", res.data);
 
-  const progressSteps = [
-    "Submitted",
-    "AI Analysis",
-    "Government Review",
-    "HEI Matching",
-    "Team Formation",
-    "Project",
-    "Prototype",
-    "Pilot",
-    "Validation",
-  ];
+        const challengeData = res.data.challenge || res.data;
 
-  const cardStyle = {
-    backgroundColor: "#ffffff",
-    borderRadius: "16px",
-    padding: "26px",
-    marginBottom: "20px",
-    border: "1px solid #e5e7eb",
-    boxShadow: "0 4px 18px rgba(15, 23, 42, 0.05)",
-  };
+        console.log(
+          "COMPLETE CHALLENGE:",
+          JSON.stringify(challengeData, null, 2)
+        );
 
-  const sectionTitleStyle = {
-    fontSize: "19px",
-    margin: "0 0 20px 0",
-    color: "#111827",
-    fontWeight: "700",
-  };
+        console.log(
+          "CREATED AT:",
+          challengeData.createdAt
+        );
+
+        console.log(
+          "DOMAIN:",
+          challengeData.domain
+        );
+
+        console.log(
+          "AI ANALYSIS:",
+          challengeData.aiAnalysis
+        );
+
+        console.log(
+          "LOCATION DETAILS:",
+          JSON.stringify(challengeData.location, null, 2)
+        );
+
+        setChallenge(challengeData);
+
+        // -----------------------------------------
+        // Reverse geocode location
+        // -----------------------------------------
+
+        const coordinates = challengeData.location?.coordinates;
+
+        if (
+          Array.isArray(coordinates) &&
+          coordinates.length === 2
+        ) {
+          // GeoJSON format = [longitude, latitude]
+          const longitude = coordinates[0];
+          const latitude = coordinates[1];
+
+          try {
+            const locationResponse = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`,
+              {
+                headers: {
+                  Accept: "application/json",
+                },
+              }
+            );
+
+            if (!locationResponse.ok) {
+              throw new Error("Unable to fetch location");
+            }
+
+            const locationData =
+              await locationResponse.json();
+
+            console.log(
+              "REVERSE GEOCODE RESPONSE:",
+              locationData
+            );
+
+            const address = locationData.address || {};
+
+            const city =
+              address.city ||
+              address.town ||
+              address.village ||
+              address.municipality ||
+              address.county;
+
+            const state = address.state;
+
+            if (city && state) {
+              setLocationName(`${city}, ${state}`);
+            } else if (city) {
+              setLocationName(city);
+            } else if (state) {
+              setLocationName(state);
+            } else if (locationData.display_name) {
+              setLocationName(locationData.display_name);
+            } else {
+              setLocationName("Location available");
+            }
+          } catch (locationError) {
+            console.error(
+              "Reverse geocoding failed:",
+              locationError
+            );
+
+            setLocationName("Location available");
+          }
+        } else if (
+          typeof challengeData.location === "string"
+        ) {
+          setLocationName(challengeData.location);
+        } else {
+          setLocationName("Location not available");
+        }
+      } catch (err) {
+        console.error("Challenge fetch error:", err);
+
+        setError(
+          err.response?.data?.message ||
+            "Unable to load challenge"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChallenge();
+  }, [id]);
+
+  // -----------------------------------------
+  // Loading
+  // -----------------------------------------
+
+  if (loading) {
+    return (
+      <>
+        <style>{styles(monsoon)}</style>
+
+        <div className="details-page">
+          <div className="state-card">
+            <div className="state-spinner" />
+            <span>Loading challenge...</span>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // -----------------------------------------
+  // Error
+  // -----------------------------------------
+
+  if (error) {
+    return (
+      <>
+        <style>{styles(monsoon)}</style>
+
+        <div className="details-page">
+          <div className="state-card error-state">
+            <ShieldCheck size={22} />
+            <span>{error}</span>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // -----------------------------------------
+  // No challenge
+  // -----------------------------------------
+
+  if (!challenge) {
+    return (
+      <>
+        <style>{styles(monsoon)}</style>
+
+        <div className="details-page">
+          <div className="state-card">
+            <ShieldCheck size={22} />
+            <span>Challenge not found</span>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const ai = challenge.aiAnalysis || {};
+  const validation = challenge.validation || {};
+
+  // -----------------------------------------
+  // Format date
+  // -----------------------------------------
+
+  const formattedDate = challenge.createdAt
+    ? new Date(challenge.createdAt).toLocaleDateString(
+        "en-IN",
+        {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        }
+      )
+    : "Not available";
+
+  // -----------------------------------------
+  // Format arrays
+  // -----------------------------------------
+
+  const expertise =
+    Array.isArray(ai.requiredExpertise)
+      ? ai.requiredExpertise.join(", ")
+      : ai.requiredExpertise || "Not available";
+
+  const technologies =
+    Array.isArray(ai.technologies)
+      ? ai.technologies.join(", ")
+      : ai.technologies || "Not available";
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "linear-gradient(180deg, #0a1621ff 0%, #0a1723ff 100%),url(${monsoonBg})",
-        padding: "32px",
-        fontFamily:
-          "Inter, Arial, Helvetica, sans-serif",
-        color: "#111827",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-        }}
-      >
-        {/* Back Button */}
-        <button
-          onClick={() => window.history.back()}
-          style={{
-            background: "transparent",
-            border: "none",
-            color: "#2563eb",
-            fontSize: "14px",
-            fontWeight: "600",
-            cursor: "pointer",
-            padding: "6px 0",
-            marginBottom: "18px",
-          }}
-        >
-          ← Back to Challenges
-        </button>
+    <>
+      <style>{styles(monsoon)}</style>
 
-        {/* HERO HEADER */}
-        <div
-          style={{
-            position: "relative",
-            overflow: "hidden",
-            background:
-              "linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)",
-            borderRadius: "20px",
-            padding: "32px",
-            marginBottom: "22px",
-            border: "1px solid #dbeafe",
-            boxShadow:
-              "0 10px 30px rgba(37, 99, 235, 0.08)",
-          }}
-        >
-          {/* Decorative circle */}
-          <div
-            style={{
-              position: "absolute",
-              width: "180px",
-              height: "180px",
-              borderRadius: "50%",
-              background:
-                "rgba(37, 99, 235, 0.06)",
-              right: "-60px",
-              top: "-70px",
-            }}
-          />
+      <div className="details-page">
+        <div className="details-container">
 
-          <div
-            style={{
-              position: "relative",
-              zIndex: 1,
-            }}
+          {/* Back Button */}
+          <Link
+            to="/admin/challenges"
+            className="back-btn"
           >
-            {/* Badges */}
-            <div
-              style={{
-                display: "flex",
-                gap: "10px",
-                flexWrap: "wrap",
-                marginBottom: "15px",
-              }}
-            >
-              <span
-                style={{
-                  backgroundColor: "#dbeafe",
-                  color: "#1d4ed8",
-                  padding: "7px 13px",
-                  borderRadius: "20px",
-                  fontSize: "12px",
-                  fontWeight: "700",
-                }}
-              >
-                {challenge.domain}
+            <ArrowLeft size={18} />
+            <span>Back to Challenges</span>
+          </Link>
+
+          {/* Header */}
+          <div className="details-header">
+            <div className="header-content">
+
+              <span className="badge">
+                <ShieldCheck size={15} />
+                {challenge.status || "Pending"}
               </span>
 
-              <span
-                style={{
-                  backgroundColor: "#fef3c7",
-                  color: "#92400e",
-                  padding: "7px 13px",
-                  borderRadius: "20px",
-                  fontSize: "12px",
-                  fontWeight: "700",
-                }}
-              >
-                ● {challenge.status}
+              <h1>
+                {challenge.title ||
+                  "Untitled Challenge"}
+              </h1>
+
+              <p>
+                {challenge.description ||
+                  "No description available"}
+              </p>
+
+            </div>
+          </div>
+
+          {/* Information Cards */}
+          <div className="info-grid">
+
+            {/* Domain */}
+            <div className="card info-card">
+
+              <div className="icon-box blue-icon">
+                <Layers3 size={20} />
+              </div>
+
+              <div className="info-card-content">
+
+                <span className="card-label">
+                  Domain
+                </span>
+
+                <p>
+                  {challenge.domain ||
+                    "Not available"}
+                </p>
+
+              </div>
+            </div>
+
+            {/* Priority */}
+            <div className="card info-card">
+
+              <div className="icon-box yellow-icon">
+                <Flag size={20} />
+              </div>
+
+              <div className="info-card-content">
+
+                <span className="card-label">
+                  Priority
+                </span>
+
+                <p>
+                  {challenge.priority ||
+                    "MEDIUM"}
+                </p>
+
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="card info-card">
+
+              <div className="icon-box purple-icon">
+                <MapPin size={20} />
+              </div>
+
+              <div className="info-card-content">
+
+                <span className="card-label">
+                  Location
+                </span>
+
+                <p className="location-text">
+                  {locationName}
+                </p>
+
+              </div>
+            </div>
+
+            {/* Created */}
+            <div className="card info-card">
+
+              <div className="icon-box green-icon">
+                <Calendar size={20} />
+              </div>
+
+              <div className="info-card-content">
+
+                <span className="card-label">
+                  Created
+                </span>
+
+                <p>
+                  {formattedDate}
+                </p>
+
+              </div>
+            </div>
+
+          </div>
+
+          {/* AI Analysis */}
+          <div className="large-card">
+
+            <div className="section-heading">
+
+              <div className="section-icon spark-icon">
+                <Sparkles size={19} />
+              </div>
+
+              <div>
+                <h2>AI Analysis</h2>
+
+                <p>
+                  AI-generated insights for this challenge
+                </p>
+              </div>
+
+            </div>
+
+            <div className="analysis-grid">
+
+              {/* Summary */}
+              <div className="analysis-item">
+
+                <span>Summary</span>
+
+                <p>
+                  {ai.summary ||
+                    "Not available"}
+                </p>
+
+              </div>
+
+              {/* Impact */}
+              <div className="analysis-item">
+
+                <span>Impact</span>
+
+                <p>
+                  {ai.impactLevel ||
+                    "Not available"}
+                </p>
+
+              </div>
+
+              {/* Expertise */}
+              <div className="analysis-item">
+
+                <span>Expertise Required</span>
+
+                <p>
+                  {expertise}
+                </p>
+
+              </div>
+
+              {/* Technologies */}
+              <div className="analysis-item">
+
+                <span>Technologies</span>
+
+                <p>
+                  {technologies}
+                </p>
+
+              </div>
+
+            </div>
+          </div>
+
+          {/* Challenge Information */}
+          <div className="large-card remarks-card">
+
+            <div className="section-heading">
+
+              <div className="section-icon shield-icon">
+                <ShieldCheck size={19} />
+              </div>
+
+              <div>
+
+                <h2>
+                  Challenge Information
+                </h2>
+
+                <p>
+                  Government review and remarks
+                </p>
+
+              </div>
+
+            </div>
+
+            <div className="remarks-content">
+
+              <span>
+                Government Remarks
               </span>
-            </div>
 
-            <h1
-              style={{
-                fontSize: "32px",
-                lineHeight: "1.2",
-                margin: "0 0 12px 0",
-                color: "#0f172a",
-                maxWidth: "800px",
-                fontWeight: "750",
-              }}
-            >
-              {challenge.title}
-            </h1>
-
-            <p
-              style={{
-                margin: 0,
-                color: "#64748b",
-                fontSize: "14px",
-              }}
-            >
-              Challenge ID{" "}
-              <strong style={{ color: "#334155" }}>
-                {challenge.id}
-              </strong>
-            </p>
-          </div>
-        </div>
-
-        {/* BASIC INFORMATION */}
-        <div style={cardStyle}>
-          <h2 style={sectionTitleStyle}>
-            Basic Information
-          </h2>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(210px, 1fr))",
-              gap: "14px",
-            }}
-          >
-            {[
-              {
-                icon: "👤",
-                label: "Submitted By",
-                value: challenge.submittedBy,
-              },
-              {
-                icon: "📅",
-                label: "Submitted On",
-                value: challenge.submittedOn,
-              },
-              {
-                icon: "📍",
-                label: "Location",
-                value: challenge.location,
-              },
-            ].map((item, index) => (
-              <div
-                key={index}
-                style={{
-                  padding: "17px",
-                  backgroundColor: "#f8fafc",
-                  borderRadius: "12px",
-                  border: "1px solid #e5e7eb",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "19px",
-                    marginBottom: "8px",
-                  }}
-                >
-                  {item.icon}
-                </div>
-
-                <p
-                  style={{
-                    margin: "0 0 5px 0",
-                    color: "#64748b",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.4px",
-                  }}
-                >
-                  {item.label}
-                </p>
-
-                <p
-                  style={{
-                    margin: 0,
-                    color: "#1e293b",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                  }}
-                >
-                  {item.value}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* DESCRIPTION */}
-        <div style={cardStyle}>
-          <h2 style={sectionTitleStyle}>
-            Challenge Description
-          </h2>
-
-          <div
-            style={{
-              backgroundColor: "#f8fafc",
-              borderLeft: "4px solid #2563eb",
-              borderRadius: "8px",
-              padding: "18px 20px",
-            }}
-          >
-            <p
-              style={{
-                color: "#475569",
-                lineHeight: "1.8",
-                margin: 0,
-                fontSize: "15px",
-              }}
-            >
-              {challenge.description}
-            </p>
-          </div>
-        </div>
-
-        {/* AI ANALYSIS */}
-        <div style={cardStyle}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "20px",
-              flexWrap: "wrap",
-              gap: "10px",
-            }}
-          >
-            <h2
-              style={{
-                ...sectionTitleStyle,
-                marginBottom: 0,
-              }}
-            >
-              AI Analysis
-            </h2>
-
-            <span
-              style={{
-                backgroundColor: "#ecfdf5",
-                color: "#047857",
-                padding: "6px 11px",
-                borderRadius: "20px",
-                fontSize: "11px",
-                fontWeight: "700",
-              }}
-            >
-              ✓ AI ANALYZED
-            </span>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: "14px",
-            }}
-          >
-            {[
-              ["Domain", challenge.domain],
-              ["Sub-domain", challenge.subDomain],
-              ["Priority", challenge.priority],
-              ["Impact", challenge.impact],
-              [
-                "Innovation Potential",
-                challenge.innovation,
-              ],
-            ].map(([label, value], index) => (
-              <div
-                key={index}
-                style={{
-                  padding: "18px",
-                  borderRadius: "12px",
-                  background:
-                    "linear-gradient(135deg, #f8fafc, #ffffff)",
-                  border: "1px solid #e2e8f0",
-                }}
-              >
-                <p
-                  style={{
-                    margin: "0 0 9px 0",
-                    color: "#64748b",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                  }}
-                >
-                  {label}
-                </p>
-
-                <p
-                  style={{
-                    margin: 0,
-                    color: "#0f172a",
-                    fontSize: "15px",
-                    fontWeight: "700",
-                  }}
-                >
-                  {value}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* EXPERTISE + TECHNOLOGIES */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(320px, 1fr))",
-            gap: "20px",
-          }}
-        >
-          {/* Expertise */}
-          <div style={cardStyle}>
-            <h2 style={sectionTitleStyle}>
-              Required Expertise
-            </h2>
-
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "10px",
-              }}
-            >
-              {challenge.expertise.map(
-                (item, index) => (
-                  <span
-                    key={index}
-                    style={{
-                      backgroundColor: "#eff6ff",
-                      color: "#1d4ed8",
-                      border:
-                        "1px solid #dbeafe",
-                      padding: "9px 13px",
-                      borderRadius: "20px",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    {item}
-                  </span>
-                )
-              )}
-            </div>
-          </div>
-
-          {/* Technologies */}
-          <div style={cardStyle}>
-            <h2 style={sectionTitleStyle}>
-              Suggested Technologies
-            </h2>
-
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "10px",
-              }}
-            >
-              {challenge.technologies.map(
-                (item, index) => (
-                  <span
-                    key={index}
-                    style={{
-                      backgroundColor: "#ecfdf5",
-                      color: "#047857",
-                      border:
-                        "1px solid #d1fae5",
-                      padding: "9px 13px",
-                      borderRadius: "20px",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    {item}
-                  </span>
-                )
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* SUPPORTING EVIDENCE */}
-        <div style={cardStyle}>
-          <h2 style={sectionTitleStyle}>
-            Supporting Evidence
-          </h2>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(250px, 1fr))",
-              gap: "16px",
-            }}
-          >
-            <div
-              style={{
-                border: "1px dashed #cbd5e1",
-                borderRadius: "12px",
-                padding: "30px",
-                textAlign: "center",
-                backgroundColor: "#f8fafc",
-              }}
-            >
-              <div
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  margin: "0 auto 12px",
-                  borderRadius: "12px",
-                  backgroundColor: "#dbeafe",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "22px",
-                }}
-              >
-                📷
-              </div>
-
-              <p
-                style={{
-                  margin: 0,
-                  color: "#475569",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                }}
-              >
-                Challenge Image
+              <p>
+                {validation.validationNotes ||
+                  "No remarks"}
               </p>
 
-              <p
-                style={{
-                  margin: "6px 0 0",
-                  color: "#94a3b8",
-                  fontSize: "12px",
-                }}
-              >
-                Uploaded evidence
-              </p>
             </div>
 
-            <div
-              style={{
-                border: "1px dashed #cbd5e1",
-                borderRadius: "12px",
-                padding: "30px",
-                textAlign: "center",
-                backgroundColor: "#f8fafc",
-              }}
-            >
-              <div
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  margin: "0 auto 12px",
-                  borderRadius: "12px",
-                  backgroundColor: "#dcfce7",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "22px",
-                }}
-              >
-                📄
-              </div>
-
-              <p
-                style={{
-                  margin: 0,
-                  color: "#475569",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                }}
-              >
-                Supporting Document
-              </p>
-
-              <p
-                style={{
-                  margin: "6px 0 0",
-                  color: "#94a3b8",
-                  fontSize: "12px",
-                }}
-              >
-                Additional evidence
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* PROGRESS */}
-        <div
-          style={{
-            ...cardStyle,
-            overflowX: "auto",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "30px",
-            }}
-          >
-            <div>
-              <h2
-                style={{
-                  ...sectionTitleStyle,
-                  marginBottom: "5px",
-                }}
-              >
-                Challenge Progress
-              </h2>
-
-              <p
-                style={{
-                  margin: 0,
-                  color: "#64748b",
-                  fontSize: "13px",
-                }}
-              >
-                Current stage: Government Review
-              </p>
-            </div>
-
-            <span
-              style={{
-                backgroundColor: "#eff6ff",
-                color: "#1d4ed8",
-                padding: "7px 12px",
-                borderRadius: "20px",
-                fontSize: "12px",
-                fontWeight: "700",
-              }}
-            >
-              Stage 3 of 9
-            </span>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              minWidth: "950px",
-              padding: "0 8px",
-            }}
-          >
-            {progressSteps.map(
-              (step, index) => (
-                <React.Fragment key={index}>
-                  {/* Step */}
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      minWidth: "78px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "38px",
-                        height: "38px",
-                        borderRadius: "50%",
-                        backgroundColor:
-                          index <= 2
-                            ? "#2563eb"
-                            : "#e2e8f0",
-                        color:
-                          index <= 2
-                            ? "#ffffff"
-                            : "#64748b",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "13px",
-                        fontWeight: "700",
-                        boxShadow:
-                          index <= 2
-                            ? "0 4px 12px rgba(37, 99, 235, 0.25)"
-                            : "none",
-                        border:
-                          index === 2
-                            ? "4px solid #dbeafe"
-                            : "none",
-                      }}
-                    >
-                      {index < 2 ? "✓" : index + 1}
-                    </div>
-
-                    <span
-                      style={{
-                        marginTop: "10px",
-                        fontSize: "11px",
-                        color:
-                          index <= 2
-                            ? "#1d4ed8"
-                            : "#64748b",
-                        fontWeight:
-                          index <= 2
-                            ? "700"
-                            : "500",
-                        textAlign: "center",
-                        lineHeight: "1.3",
-                        maxWidth: "80px",
-                      }}
-                    >
-                      {step}
-                    </span>
-                  </div>
-
-                  {/* Connector */}
-                  {index <
-                    progressSteps.length - 1 && (
-                    <div
-                      style={{
-                        height: "3px",
-                        flex: 1,
-                        minWidth: "35px",
-                        marginTop: "17px",
-                        borderRadius: "5px",
-                        backgroundColor:
-                          index < 2
-                            ? "#2563eb"
-                            : "#e2e8f0",
-                      }}
-                    />
-                  )}
-                </React.Fragment>
-              )
-            )}
-          </div>
-        </div>
-
-        {/* WHAT HAPPENS NEXT */}
-        <div
-          style={{
-            background:
-              "linear-gradient(135deg, #eff6ff, #f8fbff)",
-            border:
-              "1px solid #bfdbfe",
-            borderRadius: "16px",
-            padding: "26px",
-            marginBottom: "20px",
-            boxShadow:
-              "0 5px 20px rgba(37, 99, 235, 0.06)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "15px",
-            }}
-          >
-            <div
-              style={{
-                width: "42px",
-                height: "42px",
-                borderRadius: "12px",
-                backgroundColor: "#dbeafe",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "20px",
-                flexShrink: 0,
-              }}
-            >
-              →
-            </div>
-
-            <div>
-              <h2
-                style={{
-                  margin: "0 0 8px",
-                  fontSize: "19px",
-                  color: "#1e3a8a",
-                }}
-              >
-                What Happens Next?
-              </h2>
-
-              <p
-                style={{
-                  margin: 0,
-                  color: "#475569",
-                  lineHeight: "1.7",
-                  fontSize: "14px",
-                }}
-              >
-                This challenge is currently under
-                Government Review. Once validated,
-                it will move to{" "}
-                <strong>HEI Matching</strong>,
-                where suitable institutions can be
-                identified.
-              </p>
-            </div>
-          </div>
         </div>
       </div>
-    </div>
+    </>
   );
-};
+}
+
+function styles(monsoonBg) {
+  return `
+    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+    .details-page {
+      min-height: 100vh;
+      box-sizing: border-box;
+      padding: 38px 5% 80px;
+      color: #f8fafc;
+      font-family: "Manrope", Arial, sans-serif;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(5, 15, 27, 0.72),
+          rgba(9, 24, 40, 0.82)
+        ),
+        url(${monsoonBg});
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+
+    .details-container {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      width: fit-content;
+      margin-bottom: 24px;
+      padding: 10px 15px;
+      color: #dbeafe;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      background: rgba(255,255,255,.07);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: .22s ease;
+    }
+
+    .back-btn:hover {
+      transform: translateX(-2px);
+      border-color: rgba(96,165,250,.42);
+      background: rgba(255,255,255,.11);
+      color: #ffffff;
+    }
+
+    .details-header,
+    .card,
+    .large-card {
+      border: 1px solid rgba(255,255,255,.115);
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255,255,255,.115),
+          rgba(255,255,255,.045)
+        );
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 22px 60px rgba(0,0,0,.16);
+    }
+
+    .details-header {
+      position: relative;
+      overflow: hidden;
+      padding: 32px 34px;
+      border-radius: 20px;
+      margin-bottom: 22px;
+    }
+
+    .details-header::after {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      right: -95px;
+      top: -110px;
+      border-radius: 50%;
+      background: rgba(96,165,250,.10);
+      border: 1px solid rgba(255,255,255,.07);
+      box-shadow: 0 0 0 25px rgba(96,165,250,.035);
+      pointer-events: none;
+    }
+
+    .header-content {
+      position: relative;
+      z-index: 1;
+      max-width: 920px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 14px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      color: #dbeafe;
+      background: rgba(96,165,250,.13);
+      border: 1px solid rgba(96,165,250,.22);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .details-header h1 {
+      margin: 0 0 12px;
+      font-size: clamp(28px, 4vw, 42px);
+      line-height: 1.12;
+      font-weight: 800;
+      letter-spacing: -.03em;
+      color: #f8fafc;
+    }
+
+    .details-header p {
+      margin: 0;
+      max-width: 900px;
+      color: rgba(226,232,240,.78);
+      font-size: 14px;
+      line-height: 1.75;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .card {
+      min-width: 0;
+      border-radius: 17px;
+    }
+
+    .info-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      min-height: 112px;
+      padding: 18px;
+      box-sizing: border-box;
+    }
+
+    .icon-box,
+    .section-icon {
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: 13px;
+      border: 1px solid rgba(255,255,255,.20);
+      background: rgba(241,247,255,.92);
+      color: #2563eb;
+    }
+
+    .icon-box {
+      width: 46px;
+      height: 46px;
+    }
+
+    .blue-icon {
+      color: #2563eb;
+    }
+
+    .yellow-icon {
+      color: #d97706;
+    }
+
+    .purple-icon {
+      color: #7c3aed;
+    }
+
+    .green-icon {
+      color: #059669;
+    }
+
+    .info-card-content {
+      min-width: 0;
+    }
+
+    .card-label {
+      display: block;
+      margin: 2px 0 7px;
+      color: rgba(226,232,240,.62);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+
+    .info-card p {
+      margin: 0;
+      color: #f8fafc;
+      font-size: 14px;
+      line-height: 1.5;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .location-text {
+      color: #f8fafc;
+    }
+
+    .large-card {
+      border-radius: 19px;
+      padding: 26px 28px;
+      margin-bottom: 22px;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      margin-bottom: 23px;
+      padding-bottom: 17px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+    }
+
+    .section-icon {
+      width: 43px;
+      height: 43px;
+    }
+
+    .spark-icon {
+      color: #7c3aed;
+    }
+
+    .shield-icon {
+      color: #2563eb;
+    }
+
+    .section-heading h2 {
+      margin: 0 0 4px;
+      color: #f8fafc;
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+
+    .section-heading p {
+      margin: 0;
+      color: rgba(226,232,240,.60);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 15px;
+    }
+
+    .analysis-item {
+      min-width: 0;
+      padding: 18px;
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 15px;
+      background: rgba(255,255,255,.045);
+    }
+
+    .analysis-item span,
+    .remarks-content > span {
+      display: block;
+      margin-bottom: 8px;
+      color: #bfdbfe;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+
+    .analysis-item p,
+    .remarks-content p {
+      margin: 0;
+      color: rgba(241,245,249,.86);
+      font-size: 13px;
+      line-height: 1.75;
+      overflow-wrap: anywhere;
+    }
+
+    .remarks-content {
+      padding: 18px;
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 15px;
+      background: rgba(255,255,255,.045);
+    }
+
+    .state-card {
+      width: min(520px, 100%);
+      margin: 18vh auto 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 24px;
+      box-sizing: border-box;
+      color: #f8fafc;
+      font-size: 14px;
+      font-weight: 700;
+      text-align: center;
+      border-radius: 17px;
+      border: 1px solid rgba(255,255,255,.115);
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255,255,255,.115),
+          rgba(255,255,255,.045)
+        );
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 22px 60px rgba(0,0,0,.16);
+    }
+
+    .error-state {
+      color: #fecaca;
+    }
+
+    .state-spinner {
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.22);
+      border-top-color: #60a5fa;
+      animation: challenge-spin .8s linear infinite;
+    }
+
+    @keyframes challenge-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 1000px) {
+      .details-page {
+        padding: 32px 25px 65px;
+      }
+
+      .info-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 700px) {
+      .details-page {
+        padding: 26px 16px 50px;
+        background-attachment: scroll;
+      }
+
+      .details-header {
+        padding: 25px 22px;
+        border-radius: 17px;
+      }
+
+      .details-header h1 {
+        font-size: 28px;
+      }
+
+      .details-header p {
+        font-size: 13px;
+      }
+
+      .analysis-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .large-card {
+        padding: 22px 19px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .back-btn {
+        font-size: 12px;
+      }
+
+      .section-heading h2 {
+        font-size: 16px;
+      }
+
+      .analysis-item,
+      .remarks-content {
+        padding: 15px;
+      }
+    }
+  `;
+}
 
 export default ChallengeDetails;

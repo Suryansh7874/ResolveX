@@ -36,7 +36,7 @@ function AdminDashboard() {
   const [error, setError] = useState("");
 
   /* =========================================================
-     FETCH CHALLENGES FROM BACKEND
+     FETCH CHALLENGES
   ========================================================= */
 
   const fetchChallenges = async () => {
@@ -95,43 +95,21 @@ function AdminDashboard() {
       .toLowerCase()
       .replace(/[\s-]+/g, "_");
 
-  /*
-    These are based on the actual Challenge controller:
+  const isValidated = (challenge) =>
+    normalizeStatus(challenge?.status) === "validated";
 
-    VALIDATED
-    REJECTED
-    MATCHED
-    IN_PROJECT
-    RESOLVED
-  */
+  const isRejected = (challenge) =>
+    normalizeStatus(challenge?.status) === "rejected";
 
-  const isValidated = (challenge) => {
-    return normalizeStatus(challenge?.status) === "validated";
-  };
+  const isMatched = (challenge) =>
+    normalizeStatus(challenge?.status) === "matched";
 
-  const isRejected = (challenge) => {
-    return normalizeStatus(challenge?.status) === "rejected";
-  };
+  const isActiveProject = (challenge) =>
+    normalizeStatus(challenge?.status) === "in_project";
 
-  const isMatched = (challenge) => {
-    return normalizeStatus(challenge?.status) === "matched";
-  };
+  const isCompletedProject = (challenge) =>
+    normalizeStatus(challenge?.status) === "resolved";
 
-  const isActiveProject = (challenge) => {
-    return normalizeStatus(challenge?.status) === "in_project";
-  };
-
-  const isCompletedProject = (challenge) => {
-    return normalizeStatus(challenge?.status) === "resolved";
-  };
-
-  /*
-    Anything that has not yet moved to one of the later lifecycle
-    states is treated as pending review.
-
-    This matches the current backend lifecycle where a newly created
-    challenge has not yet been validated/rejected.
-  */
   const isPendingReview = (challenge) => {
     const status = normalizeStatus(challenge?.status);
 
@@ -174,13 +152,11 @@ function AdminDashboard() {
   };
 
   /* =========================================================
-     STATUS LABELS
+     STATUS
   ========================================================= */
 
   const getStatusLabel = (status) => {
-    const normalized = normalizeStatus(status);
-
-    switch (normalized) {
+    switch (normalizeStatus(status)) {
       case "validated":
         return "Validated";
 
@@ -202,9 +178,7 @@ function AdminDashboard() {
   };
 
   const getStatusClass = (status) => {
-    const normalized = normalizeStatus(status);
-
-    switch (normalized) {
+    switch (normalizeStatus(status)) {
       case "validated":
         return "status-validated";
 
@@ -250,9 +224,7 @@ function AdminDashboard() {
     const counts = {};
 
     challenges.forEach((challenge) => {
-      const domain = formatValue(
-        getDomain(challenge)
-      );
+      const domain = formatValue(getDomain(challenge));
 
       counts[domain] = (counts[domain] || 0) + 1;
     });
@@ -313,7 +285,7 @@ function AdminDashboard() {
   ];
 
   /* =========================================================
-     CIRCULAR PROGRESS CHART
+     CIRCULAR CHART
   ========================================================= */
 
   const progressChartData = useMemo(() => {
@@ -467,7 +439,7 @@ function AdminDashboard() {
   ]);
 
   /* =========================================================
-     ECOSYSTEM METRICS
+     ECOSYSTEM
   ========================================================= */
 
   const getUniqueCount = (fields) => {
@@ -480,9 +452,7 @@ function AdminDashboard() {
         if (value) {
           if (Array.isArray(value)) {
             value.forEach((item) => {
-              if (item) {
-                values.add(String(item));
-              }
+              if (item) values.add(String(item));
             });
           } else if (
             typeof value === "object" &&
@@ -577,15 +547,6 @@ function AdminDashboard() {
     if (location?.name) {
       return location.name;
     }
-
-    /*
-      Backend currently stores location as GeoJSON:
-
-      {
-        type: "Point",
-        coordinates: [longitude, latitude]
-      }
-    */
 
     if (
       Array.isArray(location?.coordinates) &&
@@ -952,21 +913,13 @@ function AdminDashboard() {
           font-size: 16px;
           font-weight: 800;
           color: #ffffff !important;
-          opacity: 1 !important;
         }
 
         .panel .panel-description {
           margin: 3px 0 0;
-          color: rgba(255, 255, 255, 0.78) !important;
+          color: rgba(255,255,255,.78) !important;
           font-size: 11px;
           line-height: 1.5;
-          opacity: 1 !important;
-        }
-
-        .panel-description {
-          margin: 3px 0 0;
-          color: rgba(226,232,240,.58);
-          font-size: 10px;
         }
 
         .view-link {
@@ -1003,12 +956,11 @@ function AdminDashboard() {
           padding: 15px;
           border: 1px solid rgba(251,191,36,.18);
           border-radius: 15px;
-          background:
-            linear-gradient(
-              135deg,
-              rgba(251,191,36,.105),
-              rgba(251,191,36,.035)
-            );
+          background: linear-gradient(
+            135deg,
+            rgba(251,191,36,.105),
+            rgba(251,191,36,.035)
+          );
           margin-bottom: 15px;
         }
 
@@ -1078,16 +1030,30 @@ function AdminDashboard() {
           padding: 5px 10px 8px;
         }
 
+        /*
+          IMPORTANT:
+          Challenge items are now Links.
+        */
+
         .challenge-item {
           display: grid;
           grid-template-columns: minmax(0,1fr) auto;
           gap: 16px;
           padding: 14px 11px;
           border-bottom: 1px solid rgba(255,255,255,.065);
+          text-decoration: none;
+          color: inherit;
+          border-radius: 10px;
+          transition: .2s ease;
         }
 
         .challenge-item:last-child {
           border-bottom: none;
+        }
+
+        .challenge-item:hover {
+          background: rgba(255,255,255,.055);
+          transform: translateX(3px);
         }
 
         .challenge-title {
@@ -1162,11 +1128,6 @@ function AdminDashboard() {
           color: #6ee7b7;
         }
 
-        .status-default {
-          background: rgba(255,255,255,.08);
-          color: #cbd5e1;
-        }
-
         .section {
           margin-bottom: 28px;
         }
@@ -1212,10 +1173,6 @@ function AdminDashboard() {
           min-width: 0;
         }
 
-        .progress-cards-row .analytics-card.full-width {
-          grid-column: auto;
-        }
-
         .analytics-card-title {
           display: flex;
           align-items: center;
@@ -1228,7 +1185,6 @@ function AdminDashboard() {
           color: #ffffff !important;
           font-size: 16px;
           font-weight: 800;
-          opacity: 1 !important;
         }
 
         .analytics-card-title span {
@@ -1332,28 +1288,13 @@ function AdminDashboard() {
         .progress-bar-fill {
           height: 100%;
           border-radius: inherit;
-          transition: width .5s ease;
         }
 
-        .progress-pending {
-          background: #fbbf24;
-        }
-
-        .progress-validated {
-          background: #4ade80;
-        }
-
-        .progress-matched {
-          background: #a78bfa;
-        }
-
-        .progress-active {
-          background: #38bdf8;
-        }
-
-        .progress-completed {
-          background: #34d399;
-        }
+        .progress-pending { background: #fbbf24; }
+        .progress-validated { background: #4ade80; }
+        .progress-matched { background: #a78bfa; }
+        .progress-active { background: #38bdf8; }
+        .progress-completed { background: #34d399; }
 
         .progress-chart-layout {
           display: grid;
@@ -1381,11 +1322,6 @@ function AdminDashboard() {
             0 0 0 5px rgba(255,255,255,.08),
             0 0 28px rgba(255,255,255,.25),
             0 18px 45px rgba(0,0,0,.28);
-          transition: transform .3s ease;
-        }
-
-        .progress-chart:hover {
-          transform: scale(1.025);
         }
 
         .progress-chart::before {
@@ -1400,9 +1336,6 @@ function AdminDashboard() {
               rgba(255,255,255,.13),
               rgba(7,18,31,.96)
             );
-          box-shadow:
-            inset 0 0 25px rgba(255,255,255,.06),
-            0 0 22px rgba(255,255,255,.12);
         }
 
         .progress-chart-center {
@@ -1416,8 +1349,6 @@ function AdminDashboard() {
           font-size: 32px;
           line-height: 1;
           font-weight: 800;
-          letter-spacing: -1.5px;
-          text-shadow: 0 2px 15px rgba(255,255,255,.22);
         }
 
         .progress-chart-label {
@@ -1429,7 +1360,6 @@ function AdminDashboard() {
 
         .progress-legend {
           display: grid;
-          grid-template-columns: 1fr;
           gap: 9px;
         }
 
@@ -1448,11 +1378,9 @@ function AdminDashboard() {
           height: 9px;
           min-width: 9px;
           border-radius: 50%;
-          box-shadow: 0 0 10px currentColor;
         }
 
         .progress-legend-content {
-          min-width: 0;
           flex: 1;
         }
 
@@ -1479,12 +1407,6 @@ function AdminDashboard() {
           border: 1px solid rgba(255,255,255,.07);
           border-radius: 14px;
           background: rgba(255,255,255,.035);
-          transition: .2s ease;
-        }
-
-        .ecosystem-item:hover {
-          background: rgba(255,255,255,.055);
-          border-color: rgba(147,197,253,.15);
         }
 
         .ecosystem-top {
@@ -1531,26 +1453,9 @@ function AdminDashboard() {
         }
 
         .impact-card {
-          position: relative;
-          overflow: hidden;
           min-height: 125px;
           padding: 14px 16px;
-          border: 1px solid rgba(255,255,255,.09);
           border-radius: 14px;
-          background:
-            linear-gradient(
-              145deg,
-              rgba(255,255,255,.10),
-              rgba(255,255,255,.04)
-            );
-          backdrop-filter: blur(18px);
-          box-shadow: 0 16px 40px rgba(0,0,0,.14);
-          transition: .22s ease;
-        }
-
-        .impact-card:hover {
-          transform: translateY(-3px);
-          border-color: rgba(147,197,253,.2);
         }
 
         .impact-icon {
@@ -1570,7 +1475,6 @@ function AdminDashboard() {
           color: #fff;
           font-size: 23px;
           font-weight: 800;
-          letter-spacing: -.6px;
         }
 
         .impact-label {
@@ -1593,7 +1497,6 @@ function AdminDashboard() {
         }
 
         .quick-action {
-          position: relative;
           display: flex;
           align-items: center;
           gap: 12px;
@@ -1615,7 +1518,6 @@ function AdminDashboard() {
           transform: translateY(-4px);
           background: rgba(255,255,255,.085);
           border-color: rgba(147,197,253,.22);
-          box-shadow: 0 15px 35px rgba(0,0,0,.14);
         }
 
         .quick-action-icon {
@@ -1650,12 +1552,6 @@ function AdminDashboard() {
           margin-left: auto;
           flex-shrink: 0;
           color: rgba(226,232,240,.4);
-          transition: .2s ease;
-        }
-
-        .quick-action:hover .quick-action-arrow {
-          color: #93c5fd;
-          transform: translateX(2px);
         }
 
         .loading-state {
@@ -1688,11 +1584,6 @@ function AdminDashboard() {
 
           .progress-chart-layout {
             grid-template-columns: 1fr;
-            gap: 20px;
-          }
-
-          .progress-chart-wrapper {
-            justify-content: center;
           }
         }
 
@@ -1718,10 +1609,6 @@ function AdminDashboard() {
 
           .impact-grid {
             grid-template-columns: 1fr;
-          }
-
-          .progress-legend {
-            grid-template-columns: repeat(2, 1fr);
           }
         }
 
@@ -1750,20 +1637,12 @@ function AdminDashboard() {
             font-size: 34px;
           }
 
-          .dashboard-subtitle {
-            font-size: 14px;
-          }
-
           .challenge-item {
             grid-template-columns: 1fr;
           }
 
           .status-badge {
             justify-self: start;
-          }
-
-          .progress-legend {
-            grid-template-columns: 1fr;
           }
         }
 
@@ -1774,28 +1653,11 @@ function AdminDashboard() {
             gap: 7px;
           }
 
-          .panel-header {
-            padding: 17px;
-          }
-
+          .panel-header,
           .review-body,
           .analytics-card,
           .impact-card {
             padding: 17px;
-          }
-
-          .progress-chart {
-            width: 185px;
-            height: 185px;
-          }
-
-          .progress-chart::before {
-            width: 135px;
-            height: 135px;
-          }
-
-          .progress-chart-total {
-            font-size: 31px;
           }
         }
       `}</style>
@@ -1803,9 +1665,7 @@ function AdminDashboard() {
       <main className="admin-page">
         <div className="admin-container">
 
-          {/* =================================================
-              HEADER
-          ================================================= */}
+          {/* HEADER */}
 
           <header className="dashboard-header">
             <div className="header-left">
@@ -1857,9 +1717,7 @@ function AdminDashboard() {
           ) : (
             <>
 
-              {/* =================================================
-                  SUMMARY
-              ================================================= */}
+              {/* SUMMARY */}
 
               <section className="stats-grid">
 
@@ -1890,16 +1748,13 @@ function AdminDashboard() {
                       <div className="stat-label">
                         {stat.label}
                       </div>
-
                     </div>
                   );
                 })}
 
               </section>
 
-              {/* =================================================
-                  REVIEW + RECENT CHALLENGES
-              ================================================= */}
+              {/* REVIEW + RECENT CHALLENGES */}
 
               <section className="main-grid">
 
@@ -1996,7 +1851,6 @@ function AdminDashboard() {
                     </div>
 
                   </div>
-
                 </div>
 
                 <div className="panel">
@@ -2017,7 +1871,6 @@ function AdminDashboard() {
                         <p className="panel-description">
                           Latest submissions received
                         </p>
-
                       </div>
 
                     </div>
@@ -2040,76 +1893,86 @@ function AdminDashboard() {
                       </div>
                     ) : (
                       recentChallenges.map(
-                        (challenge, index) => (
+                        (challenge, index) => {
 
-                          <div
-                            className="challenge-item"
-                            key={
-                              challenge?._id ||
-                              challenge?.id ||
-                              index
-                            }
-                          >
+                          const challengeId =
+                            challenge?._id ||
+                            challenge?.id;
 
-                            <div>
+                          return (
+                            <Link
+                              to={
+                                challengeId
+                                  ? `/challenges/${challengeId}`
+                                  : "#"
+                              }
+                              className="challenge-item"
+                              key={
+                                challengeId || index
+                              }
+                              onClick={(event) => {
+                                if (!challengeId) {
+                                  event.preventDefault();
+                                }
+                              }}
+                            >
 
-                              <div className="challenge-title">
-                                {getChallengeTitle(
-                                  challenge
-                                )}
-                              </div>
+                              <div>
 
-                              <div className="challenge-meta">
-
-                                <span>
-                                  <Layers3 size={10} />
-                                  {formatValue(
-                                    getDomain(challenge)
-                                  )}
-                                </span>
-
-                                <span>
-                                  <MapPin size={10} />
-                                  {getLocation(
+                                <div className="challenge-title">
+                                  {getChallengeTitle(
                                     challenge
                                   )}
-                                </span>
+                                </div>
 
-                                <span>
-                                  {formatDate(
-                                    challenge?.createdAt
-                                  )}
-                                </span>
+                                <div className="challenge-meta">
+
+                                  <span>
+                                    <Layers3 size={10} />
+                                    {formatValue(
+                                      getDomain(challenge)
+                                    )}
+                                  </span>
+
+                                  <span>
+                                    <MapPin size={10} />
+                                    {getLocation(
+                                      challenge
+                                    )}
+                                  </span>
+
+                                  <span>
+                                    {formatDate(
+                                      challenge?.createdAt
+                                    )}
+                                  </span>
+
+                                </div>
 
                               </div>
 
-                            </div>
+                              <span
+                                className={`status-badge ${getStatusClass(
+                                  challenge?.status
+                                )}`}
+                              >
+                                {getStatusLabel(
+                                  challenge?.status
+                                )}
+                              </span>
 
-                            <span
-                              className={`status-badge ${getStatusClass(
-                                challenge?.status
-                              )}`}
-                            >
-                              {getStatusLabel(
-                                challenge?.status
-                              )}
-                            </span>
-
-                          </div>
-
-                        )
+                            </Link>
+                          );
+                        }
                       )
                     )}
 
                   </div>
-
                 </div>
 
               </section>
 
-              {/* =================================================
-                  ANALYTICS
-              ================================================= */}
+              {/* ANALYTICS */}
 
               <section className="section">
 
@@ -2253,10 +2116,7 @@ function AdminDashboard() {
                           <div
                             className="progress-chart"
                             style={progressChartStyle}
-                            role="img"
-                            aria-label={`Challenge lifecycle progress showing ${totalChallenges} total challenges`}
                           >
-
                             <div className="progress-chart-center">
 
                               <div className="progress-chart-total">
@@ -2268,7 +2128,6 @@ function AdminDashboard() {
                               </div>
 
                             </div>
-
                           </div>
 
                         </div>
@@ -2277,7 +2136,6 @@ function AdminDashboard() {
 
                           {progressChartData.map(
                             (item) => (
-
                               <div
                                 className="progress-legend-item"
                                 key={item.label}
@@ -2288,17 +2146,13 @@ function AdminDashboard() {
                                   style={{
                                     background:
                                       item.color,
-                                    color:
-                                      item.color,
                                   }}
                                 />
 
                                 <div className="progress-legend-content">
-
                                   <div className="progress-legend-label">
                                     {item.label}
                                   </div>
-
                                 </div>
 
                                 <div className="progress-legend-value">
@@ -2306,33 +2160,24 @@ function AdminDashboard() {
                                 </div>
 
                               </div>
-
                             )
                           )}
 
                         </div>
-
                       </div>
-
                     </div>
 
                     <div className="analytics-card">
 
                       <div className="analytics-card-title">
-
                         <h3>Project Progress</h3>
-
-                        <span>
-                          Challenge lifecycle
-                        </span>
-
+                        <span>Challenge lifecycle</span>
                       </div>
 
                       <div className="project-progress">
 
                         {projectProgress.map(
                           (item) => (
-
                             <div
                               className="project-progress-row"
                               key={item.label}
@@ -2343,7 +2188,6 @@ function AdminDashboard() {
                               </span>
 
                               <div className="progress-bar">
-
                                 <div
                                   className={`progress-bar-fill ${item.className}`}
                                   style={{
@@ -2352,7 +2196,6 @@ function AdminDashboard() {
                                     )}%`,
                                   }}
                                 />
-
                               </div>
 
                               <span className="project-progress-value">
@@ -2360,12 +2203,10 @@ function AdminDashboard() {
                               </span>
 
                             </div>
-
                           )
                         )}
 
                       </div>
-
                     </div>
 
                   </div>
@@ -2373,7 +2214,6 @@ function AdminDashboard() {
                   <div className="analytics-card full-width">
 
                     <div className="analytics-card-title">
-
                       <h3>
                         Ecosystem Participation
                       </h3>
@@ -2381,7 +2221,6 @@ function AdminDashboard() {
                       <span>
                         HEI & Industry
                       </span>
-
                     </div>
 
                     <div className="ecosystem-grid">
@@ -2443,12 +2282,9 @@ function AdminDashboard() {
                   </div>
 
                 </div>
-
               </section>
 
-              {/* =================================================
-                  IMPACT METRICS
-              ================================================= */}
+              {/* IMPACT */}
 
               <section className="section">
 
@@ -2523,9 +2359,7 @@ function AdminDashboard() {
 
               </section>
 
-              {/* =================================================
-                  GOVERNMENT ACTIONS
-              ================================================= */}
+              {/* GOVERNMENT ACTIONS */}
 
               <section className="section">
 
@@ -2545,7 +2379,6 @@ function AdminDashboard() {
                     </div>
 
                     <div className="quick-action-content">
-
                       <div className="quick-action-title">
                         Challenge Management
                       </div>
@@ -2553,7 +2386,6 @@ function AdminDashboard() {
                       <div className="quick-action-description">
                         Manage submitted societal challenges
                       </div>
-
                     </div>
 
                     <ChevronRight
@@ -2571,7 +2403,6 @@ function AdminDashboard() {
                     </div>
 
                     <div className="quick-action-content">
-
                       <div className="quick-action-title">
                         Government Review
                       </div>
@@ -2579,7 +2410,6 @@ function AdminDashboard() {
                       <div className="quick-action-description">
                         Validate or reject challenges
                       </div>
-
                     </div>
 
                     <ChevronRight
@@ -2597,7 +2427,6 @@ function AdminDashboard() {
                     </div>
 
                     <div className="quick-action-content">
-
                       <div className="quick-action-title">
                         HEI Matching
                       </div>
@@ -2605,7 +2434,6 @@ function AdminDashboard() {
                       <div className="quick-action-description">
                         Match challenges with institutions
                       </div>
-
                     </div>
 
                     <ChevronRight
@@ -2623,7 +2451,6 @@ function AdminDashboard() {
                     </div>
 
                     <div className="quick-action-content">
-
                       <div className="quick-action-title">
                         Project Monitoring
                       </div>
@@ -2631,7 +2458,6 @@ function AdminDashboard() {
                       <div className="quick-action-description">
                         Track active and completed projects
                       </div>
-
                     </div>
 
                     <ChevronRight
@@ -2649,7 +2475,6 @@ function AdminDashboard() {
                     </div>
 
                     <div className="quick-action-content">
-
                       <div className="quick-action-title">
                         Government Officers
                       </div>
@@ -2657,7 +2482,6 @@ function AdminDashboard() {
                       <div className="quick-action-description">
                         Manage government-side users
                       </div>
-
                     </div>
 
                     <ChevronRight
@@ -2675,7 +2499,6 @@ function AdminDashboard() {
                     </div>
 
                     <div className="quick-action-content">
-
                       <div className="quick-action-title">
                         Impact & Outcomes
                       </div>
@@ -2683,7 +2506,6 @@ function AdminDashboard() {
                       <div className="quick-action-description">
                         Monitor measurable social impact
                       </div>
-
                     </div>
 
                     <ChevronRight
@@ -2698,7 +2520,6 @@ function AdminDashboard() {
 
             </>
           )}
-
         </div>
       </main>
     </>
