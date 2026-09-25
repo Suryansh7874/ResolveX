@@ -9,6 +9,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
+import Aboutus from "./pages/Aboutus";
 
 import Dashboard from "./pages/Dashboard";
 import ChallengeDetails from "./pages/ChallengeDetails";
@@ -97,6 +98,9 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+      {/*==========================About us===================*/}
+      <Route path="/about" element={<Aboutus />} />
 
         {/* ================= ADMIN DASHBOARD ================= */}
 

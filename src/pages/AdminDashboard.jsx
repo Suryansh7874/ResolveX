@@ -28,6 +28,7 @@ import {
 
 import api from "../services/api";
 import monsoonBg from "../assets/monsoon.jpg";
+import axios from "axios";
 
 function AdminDashboard() {
   const [challenges, setChallenges] = useState([]);
@@ -43,7 +44,7 @@ function AdminDashboard() {
     try {
       setError("");
 
-      const response = await api.get("/challenges");
+      const response = await axios.get("http://localhost:5000/api/challenges");
 
       console.log("CHALLENGES FROM BACKEND:", response.data);
 

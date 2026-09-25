@@ -57,7 +57,7 @@ const role = data.user.role;
         navigate("/dashboard");
       } else if (role === "OFFICER") {
         navigate("/officer");
-      } else if (role === "ADMIN") {
+      } else if (role === "GOVERNMENT") {
         navigate("/admin");
       }
     } catch (err) {
