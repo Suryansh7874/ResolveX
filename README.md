@@ -1,850 +1,925 @@
-ResolveX🚀
+# ResolveX
 
-AI-Powered Societal Innovation Collaboration Platform
+## Societal Innovation Collaboration Portal
 
-ResolveX is a digital platform designed to bridge the gap between citizens, government, Higher Educational Institutions (HEIs), students, faculty, and industry to transform real-world societal challenges into structured innovation and research projects.
+ResolveX is a digital platform designed to connect **citizens, government, higher educational institutions, faculty, students, and industry partners** to identify societal challenges and convert them into research-backed, deployable solutions.
 
-Instead of treating a problem as just a complaint that needs to be resolved, ResolveX treats it as a challenge that can be studied, validated, researched, and converted into an innovative solution.
+Instead of treating a societal problem as a simple complaint, ResolveX creates an end-to-end innovation pipeline:
 
----
-
-💡 General Idea
-
-Many societal problems are identified by citizens and local communities, but there is often no structured mechanism to connect these problems with institutions that have the expertise and resources to solve them.
-
-ResolveX creates this missing bridge.
-
-🔄 Core Ecosystem
-
-REAL-WORLD SOCIETAL CHALLENGE
-            ↓
-         CITIZEN
-            ↓
-     SUBMIT CHALLENGE
-            ↓
-       AI ANALYSIS
-            ↓
-   ┌────────┼─────────┐
-   ↓        ↓         ↓
-Category  Priority  Expertise
-            ↓
-       GOVERNMENT
-            ↓
-     VALIDATE & ASSIGN
-            ↓
-           HEI
-            ↓
-     ACCEPT CHALLENGE
-            ↓
-    FACULTY + STUDENTS
-            ↓
- FORM MULTIDISCIPLINARY TEAM
-            ↓
-         PROPOSAL
-            ↓
-     GOVERNMENT REVIEW
-            ↓
-   APPROVED / REJECTED /
-   REVISION REQUIRED
-            ↓
-      PROJECT PHASE
-            ↓
- INDUSTRY COLLABORATION
-            ↓
- PROTOTYPE → PILOT → DEPLOYMENT
-            ↓
-       SOCIAL IMPACT
-
-Goal: Create a complete Challenge → Research → Innovation → Implementation → Impact ecosystem.
+```text
+Citizen / Community / Government
+              ↓
+      Societal Challenge
+              ↓
+       AI Analysis
+              ↓
+ Government Validation
+              ↓
+        HEI Matching
+              ↓
+      HEI Acceptance
+              ↓
+    Faculty + Student Team
+              ↓
+        Proposal
+              ↓
+    Government Review
+              ↓
+          Project
+              ↓
+        Milestones
+              ↓
+ Industry Collaboration
+              ↓
+ Prototype / Testing
+              ↓
+           Pilot
+              ↓
+        Validation
+              ↓
+ Deployment / Technology Transfer
+              ↓
+       Measurable Impact
+```
 
 ---
 
-🎯 Problem Statement
+# 1. Problem Statement
 
-Societal challenges are often scattered across communities and government systems, while universities, researchers, students, startups, industries, and innovation centres possess expertise and resources that could potentially address them.
+Societal problems are often identified by citizens, communities, local bodies, and government departments, but there can be a gap between:
 
-However, there is a lack of a unified platform that can:
+* identifying the problem,
+* understanding the problem,
+* finding the right academic expertise,
+* developing a solution,
+* obtaining industry support,
+* testing and validating the solution,
+* deploying it,
+* and measuring its social impact.
 
-- Capture societal challenges in a structured manner
-- Understand and categorize challenges using AI
-- Identify duplicate or similar challenges
-- Match challenges with suitable HEIs
-- Enable universities to form multidisciplinary teams
-- Convert challenges into research/solution proposals
-- Enable government evaluation and monitoring
-- Connect projects with industry and startups
-- Track project progress and eventual social impact
-
-ResolveX aims to provide this complete digital ecosystem.
+ResolveX aims to provide a common digital platform connecting these stakeholders.
 
 ---
 
-🚀 Current Core Features
+# 2. Core Objectives
 
-1. 🔐 Citizen Registration & Authentication
+ResolveX focuses on:
 
-ResolveX supports:
-
-- User registration
-- Login
-- JWT-based authentication
-- Password hashing using bcrypt
-- Forgot password
-- OTP-based password reset
-- Password reset verification
-
-Current Roles
-
-- "CITIZEN"
-- "GOVERNMENT"
-- "HEI_ADMIN"
-- "FACULTY"
-- "STUDENT"
-- "INDUSTRY"
-
-Public registration is intended for citizens, while privileged institutional accounts are managed through the appropriate administrative workflow.
+* Citizen and community challenge submission
+* AI-assisted challenge analysis
+* Government validation
+* HEI matching
+* Multidisciplinary team formation
+* Research and solution proposals
+* Government proposal review
+* Project lifecycle management
+* Milestones and documentation
+* Industry collaboration
+* Prototype and pilot support
+* Deployment and technology transfer
+* Social impact tracking
+* Platform analytics
+* Notifications and communication
 
 ---
 
-2. 📝 Societal Challenge Submission
+# 3. Major Modules
 
-Citizens can submit real-world societal challenges.
+## 3.1 Citizen Engagement
 
-A challenge can contain:
+Citizens can submit societal challenges containing:
 
-- Title
-- Description
-- Domain
-- Geographic location
-- Images
-- Videos
-- Supporting documents
+* Title
+* Description
+* Location
+* Images
+* Videos
+* Supporting documents
 
-Supported Challenge Domains
-
-- Education
-- Healthcare
-- Agriculture
-- Water Resources
-- Sanitation
-- Environment
-- Energy
-- Rural Livelihoods
-- Urban Development
-- Accessibility
-- Public Administration
-- Digital Services
-- Transportation
-- Disaster Management
-- Other
-
-Challenges use GeoJSON Point coordinates, allowing the platform to work with location-based data.
+The submitted challenge becomes part of the ResolveX innovation pipeline.
 
 ---
 
-3. 🤖 AI-Powered Challenge Analysis
+## 3.2 AI-Enabled Problem Management
 
-ResolveX uses AI to analyze submitted challenges.
+ResolveX can use AI to assist with:
 
-The AI can identify:
+* Challenge categorization
+* Priority identification
+* Expertise extraction
+* Technology extraction
+* Keyword extraction
+* Impact identification
+* Innovation potential
+* Duplicate detection
+* HEI matching support
 
-- Challenge summary
-- Sub-domain
-- Required expertise
-- Required technologies
-- Keywords
-- Impact level
-- Innovation potential
-
-This transforms an unstructured citizen submission into structured information for validation and institutional matching.
-
-Example
-
-Citizen Submission
-        ↓
-"Water wastage in rural village"
-        ↓
-      AI Analysis
-        ↓
-Domain: WATER_RESOURCES
-
-Required Expertise:
-- IoT
-- Embedded Systems
-- Water Management
-
-Technologies:
-- Sensors
-- IoT
-- Data Analytics
-
-Impact:
-HIGH
+The purpose of AI is to help organize and route societal challenges efficiently.
 
 ---
 
-4. 🔍 Automatic Duplicate Detection
+## 3.3 Government Validation
 
-Before a new challenge is created, ResolveX performs an automatic duplicate check.
+Government acts as a validation and coordination layer.
 
-The system considers:
+Government can:
 
-- Challenge domain
-- Geographic proximity
-- Existing challenges within the configured proximity range
-
-This helps prevent multiple users from submitting the same problem repeatedly.
-
-A separate manual duplicate-check endpoint is also available.
-
----
-
-5. 👍 Community Support
-
-Users can support existing challenges.
-
-Supported challenges are tracked through the "supportedBy" relationship.
-
-This provides a basic mechanism for identifying challenges with broader community interest.
+* Review submitted challenges
+* Inspect AI analysis
+* Validate challenges
+* Reject unsuitable challenges
+* Review potential duplicate information
+* Review HEI matching
+* Assign challenges to suitable HEIs
+* Review solution proposals
+* Approve proposals
+* Request revisions
+* Reject proposals
+* Monitor projects
+* Verify impact information
 
 ---
 
-6. 🏛️ Government Validation
+## 3.4 HEI Collaboration
 
-Government users act as the platform's primary validation and coordination authority.
+Higher Educational Institutions can:
 
-Challenge Workflow
-
-SUBMITTED
-    ↓
-UNDER_REVIEW
-    ↓
-VALIDATED
-
-Or:
-
-SUBMITTED
-    ↓
-REJECTED
-
-Government validation information includes:
-
-- Validator
-- Validation timestamp
-- Validation notes
-- Rejection reason
+* View assigned challenges
+* Accept or reject challenges
+* Manage faculty and student members
+* Form multidisciplinary teams
+* Create proposals
+* Submit proposals
+* Manage projects
+* Track milestones
+* Maintain project documentation
 
 ---
 
-7. 🧠 AI-Assisted HEI Matching
+## 3.5 Faculty and Student Collaboration
 
-Once a challenge is validated, ResolveX can identify suitable Higher Educational Institutions (HEIs).
+Faculty members act as academic/project mentors.
 
-HEIs are evaluated using:
+Faculty can:
 
-- Disciplines
-- Research areas
-- Expertise
-- Innovation facilities
-- Required expertise from AI analysis
-- Required technologies
-- Challenge domain
+* View assigned challenges
+* Participate in teams
+* Guide student teams
+* Work with proposals
+* Manage project activities
+* Monitor milestones
+* Contribute to project documentation
 
-The matching engine generates a compatibility score.
+Students can:
 
-Matching Process
-
-Challenge
-    ↓
-Required Expertise
-Required Technologies
-Domain
-    ↓
-HEI Database
-    ↓
-Matching Algorithm
-    ↓
-Match Score
-    ↓
-Ranked HEIs
-
-Example:
-
-Challenge
-    ↓
-Embedded Systems Required
-    ↓
-MNNIT Allahabad
-    ↓
-Expertise Match
-    ↓
-Score: 20+
+* Participate in teams
+* View challenges
+* Work on projects
+* View proposals
+* Work on assigned milestones
+* Upload permitted documentation
+* Track project progress
 
 ---
 
-8. 🏛️ Government → HEI Assignment
+## 3.6 Industry Partnership
 
-Government users can assign a validated challenge to a specific HEI.
+Industry collaboration connects projects with external organizations.
 
-The challenge stores:
+Possible collaboration types include:
 
-- Assigned HEI
-- Government user who assigned it
-- Assignment timestamp
-- HEI acceptance status
-- HEI response
-- Remarks
+* Mentoring
+* Funding
+* Co-development
+* Prototyping
+* Pilot support
+* Testing
+* Technology transfer
 
-Initial acceptance state:
-
-PENDING
-
----
-
-9. ✅ HEI Challenge Acceptance / Rejection
-
-The assigned HEI can respond to a challenge.
-
-Accept
-
-MATCHED
-   ↓
-HEI ACCEPTED
-   ↓
-IN_PROJECT
-
-Reject
-
-MATCHED
-   ↓
-HEI REJECTED
-   ↓
-Government can reassign
-
-When rejecting a challenge, the HEI must provide remarks.
+Industry partners can discover relevant projects and participate in collaboration workflows.
 
 ---
 
-10. 👥 HEI Member Management
+## 3.7 Project Lifecycle Management
 
-HEI administrators can register existing faculty and student users as members of their institution.
+Approved proposals become projects.
 
-Each HEI member can have:
+The project lifecycle is:
 
-- Department
-- Designation
-- Expertise
-- Research areas
-- Skills
-- Project availability
-- Member type
-
-Supported Member Types
-
-- "FACULTY"
-- "STUDENT"
-
-The system ensures that:
-
-- The member belongs to the correct HEI
-- The user's role matches the member type
-- Duplicate membership is prevented
-- Only active members are considered
-
----
-
-11. 👨‍🏫👨‍🎓 Project Team Formation
-
-Once an HEI accepts a challenge, it can form a project team.
-
-A project team is linked directly to:
-
-- Challenge
-- HEI
-- Team creator
-
-Teams can contain:
-
-- Faculty Members
-- Student Members
-
-Team States
-
-- "FORMING"
-- "ACTIVE"
-- "COMPLETED"
-
-The system verifies that selected members:
-
-- Belong to the same HEI
-- Are active HEI members
-- Have the correct member type
-- Are not duplicated within the team
-
----
-
-12. 📄 Proposal Creation
-
-After team formation, the HEI can create a structured proposal.
-
-A proposal contains:
-
-- Title
-- Problem statement
-- Proposed solution
-- Objectives
-- Methodology
-- Expected outcomes
-- Required technologies
-- Estimated duration
-- Required resources
-
-The proposal is linked to:
-
-- Challenge
-- Project Team
-- HEI
-- Submitting User
-
-Initial proposal status:
-
-DRAFT
-
----
-
-13. 📤 Proposal Submission
-
-Once the proposal is ready, the HEI can submit it for evaluation.
-
-DRAFT
-  ↓
-SUBMITTED
-
-Only proposals in "DRAFT" state can be submitted.
-
----
-
-14. 🏛️ Government Proposal Review
-
-Government users can review submitted proposals.
-
-Review States
-
-- "APPROVED"
-- "REJECTED"
-- "REVISION_REQUIRED"
-
-The review records:
-
-- Reviewing government user
-- Review timestamp
-- Review remarks
-
-Complete Proposal Workflow
-
-DRAFT
-  ↓
-SUBMITTED
-  ↓
-UNDER_REVIEW
-  ↓
-┌──────────────┬──────────────┬────────────────────┐
-↓              ↓              ↓
-APPROVED     REJECTED    REVISION_REQUIRED
-
----
-
-🔄 Complete Current Workflow
-
-                    RESOLVEX
-                       ↓
-                    CITIZEN
-                       ↓
-               SUBMIT CHALLENGE
-                       ↓
-                  AI ANALYSIS
-                       ↓
-          ┌────────────┴────────────┐
-          ↓                         ↓
-   Categorization             Duplicate Check
-          └────────────┬────────────┘
-                       ↓
-                  GOVERNMENT
-                       ↓
-                   VALIDATION
-                  ↙️           ↘️
-            VALIDATED        REJECTED
-                 ↓
-             HEI MATCHING
-                 ↓
-           MATCH SCORE / HEIs
-                 ↓
-         GOVERNMENT ASSIGNS HEI
-                 ↓
-               MATCHED
-              ↙️       ↘️
-          ACCEPT      REJECT
-             ↓           ↓
-       IN_PROJECT    REASSIGNMENT
-             ↓
-      FORM PROJECT TEAM
-          ↙️       ↘️
-     FACULTY     STUDENTS
-          \       /
-           \     /
-        CREATE PROPOSAL
-             ↓
-           DRAFT
-             ↓
-           SUBMIT
-             ↓
-       GOVERNMENT REVIEW
-        ↙️       ↓        ↘️
-   APPROVED  REJECTED  REVISION_REQUIRED
-
----
-
-🏗️ Current Backend Architecture
-
-ResolveX currently follows a modular Node.js backend architecture.
-
-Backend
-│
-├── Controllers
-│   ├── Auth
-│   ├── Challenge
-│   ├── HEI
-│   ├── HEI Member
-│   ├── Project Team
-│   └── Proposal
-│
-├── Models
-│   ├── User
-│   ├── Challenge
-│   ├── HEI
-│   ├── HEIMember
-│   ├── ProjectTeam
-│   └── Proposal
-│
-├── Routes
-│   ├── Auth
-│   ├── Challenges
-│   ├── HEIs
-│   ├── HEI Members
-│   ├── Project Teams
-│   └── Proposals
-│
-├── Middleware
-│   ├── Authentication
-│   └── Role Authorization
-│
-├── Services
-│   ├── Authentication
-│   ├── AI Analysis
-│   ├── HEI Matching
-│   └── Email / OTP
-│
-└── Database
-    └── MongoDB
-
----
-
-🔐 Role-Based Access Control
-
-ResolveX uses authentication middleware and role-based authorization.
-
-Role| Responsibilities
-CITIZEN| Register/login, submit challenges, view own challenges, support challenges, track status
-GOVERNMENT| Validate/reject challenges, match/assign HEIs, review proposals, coordinate institutions
-HEI_ADMIN| View assigned challenges, accept/reject, register members, form teams, create/submit proposals
-FACULTY| Participate as HEI project members
-STUDENT| Participate as HEI project members
-INDUSTRY| Future industry collaboration layer
-
----
-
-🔗 Important Data Relationships
-
-User
-│
-├──────────────► Challenge
-│
-├──────────────► HEIMember
-│                     │
-│                     ▼
-│                    HEI
-│
-└──────────────► Proposal
-                       │
-                       ▼
-                  ProjectTeam
-                  │         │
-                  ▼         ▼
-               Faculty   Students
-
-More specifically:
-
-Challenge
-│
-├── submittedBy → User
-├── assignedHEI → HEI
-├── assignedBy → Government User
-├── Proposal
-└── ProjectTeam
-      ├── Faculty
-      └── Students
-
----
-
-🧠 Design Philosophy
-
-ResolveX follows five major principles.
-
-1. Challenge ≠ Complaint
-
-A challenge is not simply something to be fixed by a government department.
-
-It is an opportunity for:
-
-Research
-   ↓
-Innovation
-   ↓
-Collaboration
-   ↓
-Implementation
-
-2. AI-Assisted Decision Making
-
-AI is used to structure and analyze challenges, while institutional and government decisions remain controlled by authorized users.
-
-3. Institution-Based Expertise
-
-Challenges should reach institutions based on their:
-
-- Research areas
-- Expertise
-- Disciplines
-- Facilities
-- Technology capabilities
-
-4. Structured Workflow
-
-Every major stage has a defined state rather than relying on informal communication.
-
-5. Role-Based Collaboration
-
-Citizen    → Identify Challenge
-Government → Validate & Coordinate
-HEI        → Research & Build
-Faculty    → Guide
-Students   → Develop
-Industry   → Support
-
----
-
-🛣️ Future Development Roadmap
-
-The following features are planned/future scope, not part of the currently completed core backend.
-
-Phase 1: Project Lifecycle
-
+```text
 Approved Proposal
        ↓
-Project Creation
+Project Created
        ↓
 Milestones
        ↓
-Progress Tracking
+Development
        ↓
 Prototype
+       ↓
+Testing
        ↓
 Pilot
        ↓
 Validation
        ↓
 Deployment
-
-Phase 2: Industry Collaboration
-
-Industry/startups/MSMEs/CSR organizations can eventually:
-
-- Discover suitable projects
-- Request collaboration
-- Provide mentorship
-- Provide technical support
-- Provide funding/CSR support
-- Support prototyping
-- Support testing
-- Support deployment
-- Participate in technology transfer
-
-Phase 3: Project Workspace
-
-A unified project workspace can contain:
-
-- Overview
-- Team
-- Proposal
-- Milestones
-- Progress
-- Industry Collaboration
-- Prototype
-- Validation
-- Documents
-- Updates
-- Impact
-
-The same workspace can be reused for different roles with role-specific permissions.
-
-Phase 4: Notifications & Communication
-
-A comprehensive notification layer can provide updates for:
-
-- Challenge validation
-- HEI assignment
-- HEI acceptance/rejection
-- Team formation
-- Proposal submission
-- Proposal review
-- Project milestones
-- Industry collaboration
-- Project completion
-
-Phase 5: Government Analytics
-
-Government dashboards can eventually provide:
-
-Total Challenges
        ↓
-Domain Distribution
-       ↓
-Institutional Participation
-       ↓
-Industry Engagement
-       ↓
-Active Projects
-       ↓
-Project Progress
-       ↓
-Solutions Deployed
-       ↓
-Social Impact
+Impact Measurement
+```
 
-The planned frontend architecture also uses role-based dashboards for citizens, government, HEIs, faculty, students, and industry.
+Project management includes:
+
+* Project overview
+* Team
+* Proposal
+* Milestones
+* Documentation
+* Industry collaboration
+* Prototype/pilot information
+* Validation
+* Deployment
+* Impact
 
 ---
 
-🛠️ Technology Stack
+## 3.8 Impact Tracking
 
-Backend
+After implementation, projects can record:
 
-- Node.js
-- Express.js
-- MongoDB
-- Mongoose
-- JWT Authentication
-- bcrypt
-- Multer
-- REST APIs
+* Deployment status
+* Number of beneficiaries
+* Communities reached
+* Locations covered
+* Measurable outcomes
+* Impact summary
+* Deployment challenges
+* Supporting evidence
 
-AI
-
-- Google Gemini API
-- AI-powered challenge classification and analysis
-
-Geospatial
-
-- GeoJSON
-- MongoDB 2dsphere indexing
-- Location-based duplicate detection
-
-Security
-
-- JWT authentication
-- Role-based authorization
-- Password hashing
-- OTP-based password recovery
-- Protected institutional workflows
+Government can verify submitted impact information.
 
 ---
 
-📊 Current MVP Status
+## 3.9 Analytics
 
-✅ Implemented
+ResolveX analytics can provide information about:
 
-- Authentication
-- Role-based authorization
-- Citizen registration/login
-- Password recovery with OTP
-- Challenge submission
-- Media upload
-- Supporting documents
-- Location handling
-- AI challenge analysis
-- Challenge categorization
-- AI-derived expertise/technology extraction
-- Automatic duplicate detection
-- Community support
-- Government validation
-- HEI management
-- HEI member registration
-- HEI matching
-- Match scoring
-- Government → HEI assignment
-- HEI acceptance/rejection
-- Project team formation
-- Faculty/student team members
-- Proposal creation
-- Proposal draft
-- Proposal submission
-- Government proposal review
-- Proposal approval/rejection/revision workflow
+### Challenges
 
-🚧 Planned
+* Total challenges
+* Challenge status
+* Challenge domains
+* Priority distribution
+* District distribution
 
-- Full project lifecycle
-- Milestone management
-- Industry collaboration
-- Mentorship
-- Funding/CSR workflow
-- Prototype/pilot tracking
-- Solution validation
-- Deployment tracking
-- Impact measurement
-- Advanced analytics
-- Expanded communication/notification workflows
+### Proposals
+
+* Submitted
+* Approved
+* Rejected
+* Revision required
+
+### Projects
+
+* Total projects
+* Active projects
+* Completed projects
+* Project status
+
+### HEIs
+
+* Number of HEIs
+* HEI participation
+* Projects by HEI
+
+### Industry
+
+* Industry partners
+* Collaboration count
+* Collaboration types
+* Active collaborations
+* Completed collaborations
+
+### Impact
+
+* Deployed projects
+* Beneficiaries
+* Communities reached
+* Deployment status
 
 ---
 
-🌍 Vision
+# 4. User Roles
 
-ResolveX aims to evolve from a challenge reporting platform into a complete societal innovation ecosystem.
+ResolveX currently uses the following roles:
 
-RESOLVEX
-    ↓
-REAL-WORLD PROBLEMS
-    ↓
+```text
+CITIZEN
+GOVERNMENT
+HEI_ADMIN
+FACULTY
+STUDENT
+INDUSTRY
+```
+
+## CITIZEN
+
+Can:
+
+* Register
+* Submit challenges
+* View own challenges
+* Track challenge progress
+* View relevant challenge information
+* Receive notifications
+
+## GOVERNMENT
+
+The Government role also represents the merged administrative/government control layer.
+
+Can:
+
+* Manage challenges
+* Validate challenges
+* Reject challenges
+* Assign HEIs
+* Review proposals
+* Approve proposals
+* Request revisions
+* Reject proposals
+* Monitor projects
+* Verify impact
+* View platform analytics
+
+## HEI_ADMIN
+
+Can:
+
+* Manage assigned challenges
+* Accept/reject challenges
+* Manage HEI members
+* Form project teams
+* Manage proposals
+* Manage projects
+
+## FACULTY
+
+Can:
+
+* Participate in teams
+* Guide projects
+* Work with proposals
+* Manage permitted project activities
+* Monitor milestones
+
+## STUDENT
+
+Can:
+
+* Participate in teams
+* View assigned projects
+* Work on permitted project activities
+* Update assigned work
+* Access project documents
+
+## INDUSTRY
+
+Can:
+
+* Discover projects
+* View collaboration opportunities
+* Request collaboration
+* Participate in active collaborations
+* Provide support according to collaboration type
+
+---
+
+# 5. Frontend Dashboard Architecture
+
+ResolveX uses role-based dashboards.
+
+```text
+ResolveX
+   ↓
+Authentication
+   ↓
+Role Detection
+   ↓
+├── Government Dashboard
+├── Citizen Dashboard
+├── HEI Admin Dashboard
+├── Faculty Dashboard
+├── Student Dashboard
+└── Industry Dashboard
+```
+
+A common dashboard layout should be used across all roles.
+
+Common components include:
+
+* Navbar
+* Sidebar
+* Notification system
+* Profile
+* Cards
+* Tables
+* Filters
+* Search
+* Status badges
+* Challenge details
+* Project workspace
+
+---
+
+# 6. Project Workspace
+
+The project workspace is shared by authorized project stakeholders.
+
+```text
+Project Workspace
+│
+├── Overview
+├── Team
+├── Proposal
+├── Milestones
+├── Documents
+├── Industry Collaboration
+├── Prototype
+├── Pilot
+├── Validation
+├── Deployment
+└── Impact
+```
+
+Permissions depend on the user's role.
+
+For example:
+
+```text
+Government
+→ Review / monitor / verify
+
+HEI Admin
+→ Manage project
+
+Faculty
+→ Guide / manage permitted project work
+
+Student
+→ Work on assigned activities
+
+Industry
+→ Participate in collaboration
+```
+
+---
+
+# 7. Backend Architecture
+
+The backend follows a typical Node.js + Express + MongoDB architecture.
+
+```text
+Client
+  ↓
+Routes
+  ↓
+Middleware
+  ↓
+Controllers
+  ↓
+Models
+  ↓
+MongoDB
+```
+
+### Routes
+
+Routes define API endpoints.
+
+### Middleware
+
+Middleware handles things such as:
+
+* Authentication
+* JWT verification
+* Role authorization
+* Request processing
+
+### Controllers
+
+Controllers contain business logic.
+
+Examples:
+
+```text
+challengeController
+proposalController
+projectController
+milestoneController
+projectDocumentationController
+industryCollaborationController
+projectImpactController
+analyticsController
+notificationController
+```
+
+### Models
+
+Models define MongoDB document structures.
+
+---
+
+# 8. Dashboard Controllers
+
+Dashboard controllers provide role-specific aggregated information to the frontend.
+
+Example:
+
+```text
+GET /api/dashboard/government
+```
+
+can provide:
+
+* Challenge counts
+* Proposal counts
+* Project counts
+* Pending actions
+* Industry collaboration information
+* Impact information
+
+The dashboard controller acts as a bridge between multiple backend models and the frontend dashboard.
+
+---
+
+# 9. Analytics Controller
+
+Analytics are different from role-specific dashboards.
+
+The analytics controller provides platform-level statistics.
+
+Example:
+
+```text
+GET /api/analytics/overview
+```
+
+Possible response sections:
+
+```text
+summary
+challenges
+proposals
+projects
+universities
+industry
+impact
+```
+
+---
+
+# 10. Major API Areas
+
+The backend is organized around feature-specific API groups.
+
+```text
+/api/auth
+/api/challenges
+/api/proposals
+/api/projects
+/api/milestones
+/api/project-documents
+/api/industry-collaborations
+/api/project-impact
+/api/notifications
+/api/analytics
+/api/dashboard
+```
+
+Exact route names should be treated according to the currently mounted Express routes in the backend.
+
+---
+
+# 11. Notifications
+
+Notifications provide communication between platform users.
+
+Typical events include:
+
+```text
+Challenge Submitted
+        ↓
+Challenge Validated
+        ↓
+HEI Assigned
+        ↓
+HEI Accepted
+        ↓
+Team Formed
+        ↓
+Proposal Submitted
+        ↓
+Proposal Reviewed
+        ↓
+Project Created
+        ↓
+Milestone Updated
+        ↓
+Industry Collaboration
+        ↓
+Impact Submitted
+        ↓
+Impact Verified
+```
+
+Notifications are presented through a common notification component rather than requiring a separate dashboard.
+
+---
+
+# 12. Technology Stack
+
+The backend is based around:
+
+* Node.js
+* Express.js
+* MongoDB
+* Mongoose
+* JWT authentication
+* Multer/media handling
+* AI-assisted processing
+* REST APIs
+
+The frontend is responsible for consuming the backend APIs and presenting role-specific dashboards.
+
+---
+
+# 13. Core Data Flow
+
+```text
+USER
+ ↓
+AUTHENTICATION
+ ↓
+CHALLENGE
+ ↓
 AI ANALYSIS
-    ↓
+ ↓
 GOVERNMENT VALIDATION
-    ↓
-HEI COLLABORATION
-    ↓
-FACULTY + STUDENT TEAMS
-    ↓
-RESEARCH
-    ↓
-INNOVATION
-    ↓
-INDUSTRY PARTNERSHIP
-    ↓
+ ↓
+HEI MATCHING
+ ↓
+HEI ACCEPTANCE
+ ↓
+TEAM FORMATION
+ ↓
+PROPOSAL
+ ↓
+GOVERNMENT REVIEW
+ ↓
+PROJECT
+ ↓
+MILESTONES
+ ↓
+DOCUMENTATION
+ ↓
+INDUSTRY COLLABORATION
+ ↓
 PROTOTYPE / PILOT
-    ↓
+ ↓
+VALIDATION
+ ↓
 DEPLOYMENT
-    ↓
-SOCIAL IMPACT
+ ↓
+IMPACT
+ ↓
+ANALYTICS
+```
 
-🚀 ResolveX
+---
 
-From societal challenges to collaborative innovation.You can copy the content inside the block directly into README.md in your GitHub repository.
+# 14. Development Principles
+
+ResolveX should follow these principles:
+
+### 1. PS-first development
+
+Every feature should directly support the original problem statement.
+
+### 2. Modular architecture
+
+Keep:
+
+* Models
+* Controllers
+* Routes
+* Middleware
+* Utilities
+
+separate.
+
+### 3. Role-based access
+
+Users should only receive functionality appropriate to their role.
+
+### 4. Reusable frontend components
+
+Use shared components wherever possible.
+
+### 5. Project-centered workflow
+
+Projects should connect:
+
+```text
+Challenge
++
+HEI
++
+Team
++
+Proposal
++
+Milestones
++
+Documents
++
+Industry
++
+Impact
+```
+
+### 6. Avoid unnecessary complexity
+
+ResolveX should not become a generic project-management platform. Features should remain connected to the societal innovation workflow.
+
+---
+
+# 15. Current Development Flow
+
+The current implementation has progressed through:
+
+```text
+Citizen Challenge Submission
+        ↓
+AI Analysis
+        ↓
+Government Validation
+        ↓
+HEI Matching / Assignment
+        ↓
+HEI Acceptance
+        ↓
+Team Formation
+        ↓
+Proposal Submission
+        ↓
+Government Proposal Review
+        ↓
+Project Lifecycle
+        ↓
+Milestones
+        ↓
+Project Documentation
+        ↓
+Industry Collaboration
+        ↓
+Impact Tracking
+        ↓
+Analytics
+```
+
+---
+
+# 16. Frontend Development Checklist
+
+### Common
+
+* [ ] Authentication
+* [ ] Role-based routing
+* [ ] Dashboard layout
+* [ ] Navbar
+* [ ] Sidebar
+* [ ] Notifications
+* [ ] Profile
+* [ ] Loading states
+* [ ] Error states
+* [ ] Empty states
+
+### Citizen
+
+* [ ] Dashboard
+* [ ] Submit Challenge
+* [ ] My Challenges
+* [ ] Challenge Details
+
+### Government
+
+* [ ] Dashboard
+* [ ] Challenge Management
+* [ ] Challenge Review
+* [ ] HEI Matching
+* [ ] HEI Assignment
+* [ ] Proposal Review
+* [ ] Project Monitoring
+* [ ] Impact
+* [ ] Analytics
+
+### HEI Admin
+
+* [ ] Dashboard
+* [ ] Assigned Challenges
+* [ ] Challenge Review
+* [ ] Member Management
+* [ ] Team Formation
+* [ ] Proposal Management
+* [ ] Project Workspace
+
+### Faculty
+
+* [ ] Dashboard
+* [ ] Challenges
+* [ ] Teams
+* [ ] Projects
+* [ ] Milestones
+* [ ] Proposals
+
+### Student
+
+* [ ] Dashboard
+* [ ] Teams
+* [ ] Projects
+* [ ] Milestones
+* [ ] Documents
+
+### Industry
+
+* [ ] Dashboard
+* [ ] Discover Projects
+* [ ] Project Details
+* [ ] Collaboration Requests
+* [ ] Active Collaborations
+
+### Project Workspace
+
+* [ ] Overview
+* [ ] Team
+* [ ] Proposal
+* [ ] Milestones
+* [ ] Documents
+* [Industry Collaboration]
+* [ ] Prototype
+* [ ] Pilot
+* [ ] Validation
+* [ ] Deployment
+* [ ] Impact
+
+---
+
+# 17. Final ResolveX Vision
+
+ResolveX connects the entire innovation lifecycle:
+
+```text
+                 SOCIETAL PROBLEM
+                       │
+                       ▼
+                  CITIZEN
+                       │
+                       ▼
+                GOVERNMENT
+                       │
+                       ▼
+                    HEI
+                       │
+             ┌─────────┴─────────┐
+             ▼                   ▼
+          FACULTY             STUDENTS
+             │                   │
+             └─────────┬─────────┘
+                       ▼
+                    PROJECT
+                       │
+                       ▼
+                  INDUSTRY
+                       │
+             ┌─────────┼─────────┐
+             ▼         ▼         ▼
+          FUNDING    TESTING   MENTORING
+             │         │         │
+             └─────────┼─────────┘
+                       ▼
+                    PILOT
+                       │
+                       ▼
+                  VALIDATION
+                       │
+                       ▼
+                   DEPLOYMENT
+                       │
+                       ▼
+                 SOCIAL IMPACT
+                       │
+                       ▼
+                   ANALYTICS
+```
+
+**ResolveX is therefore not simply a challenge-reporting application. It is a structured pipeline for transforming societal challenges into collaborative, research-driven and potentially deployable solutions.**
