@@ -26,9 +26,8 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import monsoonBg from "../assets/monsoon.jpg";
 import api from "../services/api";
-
-import axios from "axios";
 
 function AdminDashboard() {
   const [challenges, setChallenges] = useState([]);
@@ -44,7 +43,7 @@ function AdminDashboard() {
     try {
       setError("");
 
-      const response = await axios.get("http://localhost:5000/api/challenges");
+      const response = await api.get("/challenges");
 
       console.log("CHALLENGES FROM BACKEND:", response.data);
 
@@ -634,18 +633,19 @@ function AdminDashboard() {
           color: #f8fafc;
           font-family: "Manrope", Arial, sans-serif;
 
-          background:
-            radial-gradient(
-              circle at 85% 0%,
-              rgba(37, 99, 235, 0.10),
-              transparent 28%
+          background-image:
+            linear-gradient(
+              115deg,
+              rgba(3, 7, 18, 0.94) 0%,
+              rgba(3, 7, 18, 0.86) 48%,
+              rgba(3, 7, 18, 0.92) 100%
             ),
-            radial-gradient(
-              circle at 10% 20%,
-              rgba(124, 58, 237, 0.07),
-              transparent 25%
-            ),
-            #03070d;
+            url(${monsoonBg});
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          background-attachment: fixed;
+          background-color: #0c182bff;
         }
 
         .admin-container {
