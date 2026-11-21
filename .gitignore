@@ -17,4 +17,3 @@ ml-service/object_detection/weights/
 # Python cache
 __pycache__/
 *.pyc
-
