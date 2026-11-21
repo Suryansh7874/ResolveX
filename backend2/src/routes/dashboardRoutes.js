@@ -16,7 +16,7 @@ const roleMiddleware = require("../middleware/roleMiddleware");
 router.get(
   "/government",
   authMiddleware,
-  roleMiddleware("GOVERNMENT", "ADMIN"),
+  roleMiddleware("GOVERNMENT"),
   getGovernmentDashboard
 );
 

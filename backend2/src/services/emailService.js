@@ -1,6 +1,6 @@
-const nodemailer = require("nodemailer");
+const nodemailer = require("nodemailer"); // Import the nodemailer package to send emails
 
-const transporter = nodemailer.createTransport({
+const transporter = nodemailer.createTransport({ // Create a transporter object to send emails using Gmail
   service: "gmail",
   auth: {
     user: process.env.GMAIL_USER,
@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
 });
 
 
-const sendPasswordResetOTP = async (email, otp) => {
+const sendPasswordResetOTP = async (email, otp) => { // Function to send password reset OTP to the user's email
 
   const mailOptions = {
     from: `"Civic Issue Tracker" <${process.env.GMAIL_USER}>`,

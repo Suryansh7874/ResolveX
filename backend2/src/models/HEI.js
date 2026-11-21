@@ -35,6 +35,7 @@ const heiSchema = new mongoose.Schema(
       district: {
         type: String,
         trim: true,
+        default: null,
       },
 
       state: {

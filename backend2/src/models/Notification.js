@@ -40,6 +40,9 @@ const notificationSchema = new mongoose.Schema(
         "challenge_assigned",
         "challenge_accepted",
         "challenge_rejected",
+        "challenge_resolved",
+        "challenge_requires_validation",
+        "challenge_reassigned",
 
         "proposal_created",
         "proposal_submitted",
@@ -50,6 +53,19 @@ const notificationSchema = new mongoose.Schema(
         "project_created",
         "project_updated",
         "project_completed",
+
+        "milestone_created",
+        "milestone_submitted",
+        "milestone_approved",
+        "milestone_revision_required",
+        "milestone_completed",
+
+        "document_uploaded",
+        "document_updated",
+
+        "industry_collaboration_requested",
+        "industry_collaboration_accepted",
+        "industry_collaboration_rejected",
       ],
       required: true,
     },

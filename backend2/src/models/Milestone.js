@@ -33,7 +33,7 @@ const milestoneSchema = new mongoose.Schema(
         "SUBMITTED",
         "APPROVED",
         "REVISION_REQUIRED",
-        "COMPLETED",
+        // "COMPLETED",
       ],
       default: "PENDING",
     },

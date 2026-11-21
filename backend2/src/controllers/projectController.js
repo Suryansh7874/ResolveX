@@ -2,17 +2,15 @@ const Project = require("../models/Project");
 const Proposal = require("../models/Proposal");
 const Challenge = require("../models/Challenge");
 const ProjectTeam = require("../models/ProjectTeam");
+const Milestone = require("../models/Milestone"); // Added missing import
 const createNotification = require("../utils/createNotification");
 
-
+// ==========================================
+// CREATE PROJECT
+// ==========================================
 const createProject = async (req, res) => {
   try {
-    const {
-      proposalId,
-      facultyMentor,
-      startDate,
-      endDate,
-    } = req.body;
+    const { proposalId, facultyMentor, startDate, endDate } = req.body;
 
     if (!proposalId || !facultyMentor) {
       return res.status(400).json({
@@ -23,7 +21,6 @@ const createProject = async (req, res) => {
 
     // 1. Find proposal
     const proposal = await Proposal.findById(proposalId);
-
     if (!proposal) {
       return res.status(404).json({
         success: false,
@@ -53,7 +50,6 @@ const createProject = async (req, res) => {
 
     // 4. Verify challenge
     const challenge = await Challenge.findById(proposal.challengeId);
-
     if (!challenge) {
       return res.status(404).json({
         success: false,
@@ -63,7 +59,6 @@ const createProject = async (req, res) => {
 
     // 5. Verify team
     const team = await ProjectTeam.findById(proposal.teamId);
-
     if (!team) {
       return res.status(404).json({
         success: false,
@@ -85,11 +80,18 @@ const createProject = async (req, res) => {
       endDate: endDate || null,
     });
 
-    // 7. Update challenge status
-    challenge.status = "IN_PROJECT";
-    await challenge.save();
-    team.status = "ACTIVE";
-    await team.save();
+    // 7. Update states
+    try {
+      challenge.status = "IN_PROJECT";
+      await challenge.save();
+
+      team.status = "ACTIVE";
+      await team.save();
+    } catch (stateError) {
+      // Manual Rollback if updating states fails
+      await Project.findByIdAndDelete(project._id);
+      throw stateError;
+    }
 
     // 8. Return populated project
     const populatedProject = await Project.findById(project._id)
@@ -114,24 +116,23 @@ const createProject = async (req, res) => {
         select: "name email role",
       });
 
-    //  Trigger Notification for the Faculty Mentor
-    await createNotification({
+    // 9. Trigger Notifications (Non-blocking)
+    createNotification({
       userId: facultyMentor,
       type: "project_created",
       message: `You have been assigned as Faculty Mentor for project "${project.title}".`,
       projectId: project._id,
       challengeId: proposal.challengeId,
       proposalId: proposal._id,
-    });
+    }).catch(console.error);
 
-    //  Trigger Notification for the original challenge creator
-    await createNotification({
+    createNotification({
       userId: challenge.submittedBy,
       type: "project_created",
       message: `A project has officially started for your challenge "${challenge.title}"!`,
       projectId: project._id,
       challengeId: proposal.challengeId,
-    });
+    }).catch(console.error);
 
     return res.status(201).json({
       success: true,
@@ -149,6 +150,9 @@ const createProject = async (req, res) => {
   }
 };
 
+// ==========================================
+// COMPLETE PROJECT
+// ==========================================
 const completeProject = async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -159,10 +163,25 @@ const completeProject = async (req, res) => {
       return res.status(404).json({ success: false, message: "Project not found" });
     }
 
-    // 1. Ensure all milestones are approved before allowing project completion
+    if (project.status === "COMPLETED") {
+      return res.status(400).json({
+        success: false,
+        message: "Project is already marked as COMPLETED",
+      });
+    }
+
+    // 1. Ensure all milestones exist and are approved
+    const totalMilestones = await Milestone.countDocuments({ projectId });
+    if (totalMilestones === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot complete project without any created milestones",
+      });
+    }
+
     const pendingMilestones = await Milestone.countDocuments({
       projectId,
-      status: { $ne: "APPROVED" },
+      status: { $nin: ["APPROVED", "COMPLETED"] },
     });
 
     if (pendingMilestones > 0) {
@@ -184,7 +203,7 @@ const completeProject = async (req, res) => {
       challenge.status = "RESOLVED";
       await challenge.save();
 
-      // 4. Notify Citizen Submitter
+      // 4. Notify Citizen Submitter (Non-blocking)
       createNotification({
         userId: challenge.submittedBy,
         type: "challenge_resolved",
@@ -200,7 +219,12 @@ const completeProject = async (req, res) => {
       project,
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    console.error("Complete project error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to complete project",
+      error: error.message,
+    });
   }
 };
 

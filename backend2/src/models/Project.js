@@ -89,7 +89,13 @@ const projectSchema = new mongoose.Schema(
     endDate: {
       type: Date,
       default: null,
+
     },
+    // -----------------------------------------
+    // PROJECT COMPLETION DETAILS
+    // -----------------------------------------
+    completedAt: { type: Date, default: null }, 
+    finalRemarks: { type: String, default: null },
   },
   {
     timestamps: true,

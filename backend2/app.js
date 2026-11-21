@@ -21,6 +21,9 @@ const proposalRoutes = require("./src/routes/proposalRoutes");
 const projectRoutes = require("./src/routes/projectRoutes");
 const milestoneRoutes = require("./src/routes/milestoneRoutes");
 const projectDocumentRoutes = require("./src/routes/projectdocRoutes");
+const projectImpactRoutes=require("./src/routes/projectImpactRoutes");
+const analyticsRoutes = require("./src/routes/analyticsRoutes");
+const industryCollaborationRoutes = require("./src/routes/industryCollaborationRoutes");
 
 const dashboardRoutes = require("./src/routes/dashboardRoutes");
 
@@ -54,7 +57,6 @@ app.use("/api/voice", voiceRoute);
 app.use("/uploads", express.static("uploads"));
 
 app.use("/api/notifications", notificationRoutes);
-
 
 app.use("/api/dashboards", dashboardRoutes);
 

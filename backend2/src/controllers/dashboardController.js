@@ -232,7 +232,7 @@ const getCitizenDashboard = async (req, res) => {
       HEI.countDocuments(),
       
       // Open challenges accepting proposals
-      Challenge.find({ status: "OPEN" })
+      Challenge.find({ status: {$in: ["VALIDATED", "SUBMITTED"]}})
         .select("title description domain category location createdAt")
         .sort({ createdAt: -1 })
         .limit(6),
@@ -275,19 +275,30 @@ const getCitizenDashboard = async (req, res) => {
 // ==========================================
 const getFacultyDashboard = async (req, res) => {
   try {
-    const facultyId = req.user.id || req.user._id;
+    const userId = req.user.id || req.user._id;
 
-    // 1. Find teams guided by this faculty member
-    const facultyTeams = await ProjectTeam.find({ facultyMembers: facultyId })
+    // 1. Find HEIMember document linked to this User
+    const heiMember = await HEIMember.findOne({ userId });
+    if (!heiMember) {
+      return res.status(200).json({
+        success: true,
+        message: "Faculty dashboard metrics fetched",
+        data: { summary: { totalTeamsGuided: 0 }, guidedTeams: [], mentoredProjects: [], recentProposals: [] },
+      });
+    }
+
+    //2. Find teams guided by this faculty member
+    const facultyTeams = await ProjectTeam.find({ facultyMembers: userId })
       .populate("challengeId", "title domain status")
-      .populate("studentMembers", "name email");
+      .populate("studentMembers"," name email");
 
     const teamIds = facultyTeams.map((team) => team._id);
 
-    // 2. Parallel queries for mentored projects and proposals
+    // 3. Parallel queries for mentored projects and proposals
     const [mentoredProjects, teamProposals] = await Promise.all([
+
       // Projects where this faculty is explicitly assigned as Faculty Mentor
-      Project.find({ facultyMentor: facultyId })
+      Project.find({ facultyMentor: userId })
         .populate("challengeId", "title domain status")
         .populate("teamId", "name studentMembers")
         .populate("heiId", "name location")
@@ -338,10 +349,19 @@ const getFacultyDashboard = async (req, res) => {
 // ==========================================
 const getStudentDashboard = async (req, res) => {
   try {
-    const studentId = req.user.id || req.user._id;
+    const userId = req.user.id || req.user._id;
+
+    const heiMember = await HEIMember.findOne({ userId });
+    if (!heiMember) {
+      return res.status(200).json({
+        success: true,
+        message: "Student dashboard metrics fetched",
+        data: { summary: { totalTeamsParticipating: 0 }, myTeams: [], myProjects: [], myProposals: [] },
+      });
+    }
 
     // 1. Find all project teams the student is part of
-    const studentTeams = await ProjectTeam.find({ studentMembers: studentId })
+    const studentTeams = await ProjectTeam.find({ studentMembers: userId })
       .populate("challengeId", "title domain status")
       .populate("facultyMembers", "name email");
 

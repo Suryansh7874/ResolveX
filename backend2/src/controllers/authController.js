@@ -65,7 +65,7 @@ const login = async (req, res) => {
     });
 
     res.status(200).json({   // 200 OK
-      success: true,
+      success: true, // Indicates that the request was successful
       message: "Login successful",
       token,
       user: {
@@ -92,7 +92,7 @@ const getMe = async (req, res) => {
   try {
     res.status(200).json({
       success: true,
-      message: "Authenticated user",
+      message: "Authenticated user", // Indicates that the request was successful
       user: req.user,
     });
   } catch (error) {
@@ -110,7 +110,7 @@ const adminTest = async (req, res) => {
   res.status(200).json({
     success: true,
     message: "Welcome Admin",
-    user: req.user,
+    user: req.user,  
   });
 };
 

@@ -9,7 +9,7 @@ const ai = new GoogleGenAI({
 const testAI = async (req, res) => {
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-3.6-flash-lite",
             contents: "Say hello to the Civic Issue Tracker project in one sentence.",
         });
 
@@ -35,7 +35,6 @@ const classifyChallengeWithAI = async (title, description) => {
     if (!title || !description) {
         throw new Error("Title or Description not found");
     }
-
     const allowedDomains = [
         "EDUCATION",
         "HEALTHCARE",
@@ -146,7 +145,7 @@ Return exactly this JSON structure:
 `;
 
     const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.6-flash-lite",
         contents: prompt,
     });
 
